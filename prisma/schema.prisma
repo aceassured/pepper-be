@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String    @unique
+  password  String
+  phone     String?
+  whatsapp  String?
+  address   String?
+  state     String?
+  district  String?
+  pincode   String?
+  otp       String?
+  expiresAt DateTime?
+
+  // Relations
+  orders   Order[]
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContactForm {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentMethod {
+  CARD
+  UPI
+  BANK_TRANSFER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id     Int   @id @default(autoincrement())
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+
+  orderId String @unique
+
+  // product / order summary
+  productName         String
+  productId           Int?
+  deliveryBatch       String?
+  deliveryLocation    String?
+  quantity            Int
+  pricePerUnitInPaise Int
+  totalAmountInPaise  Int
+  currency            String  @default("INR")
+
+  // customer details
+  fullName        String
+  email           String
+  phone           String
+  whatsapp        String?
+  deliveryAddress String
+  state           String
+  district        String
+  pincode         String
+
+  paymentMethod PaymentMethod
+  termsAccepted Boolean       @default(false)
+  status        OrderStatus   @default(PENDING)
+  metadata      Json?
+
+  // one-to-one relation
+  payment   Payment? @relation("OrderPayment", fields: [paymentId], references: [id])
+  paymentId Int?     @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id       Int    @id @default(autoincrement())
+  provider String @default("razorpay")
+
+  // one-to-one relation back to order
+  order  Order? @relation("OrderPayment")
+  user   User?  @relation(fields: [userId], references: [id])
+  userId Int?
+
+  // Razorpay specific fields
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  amountInPaise     Int
+  currency          String        @default("INR")
+  status            PaymentStatus @default(CREATED)
+  method            String?
+  bank              String?
+  vpa               String?
+  captured          Boolean?
+  metadata          Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
