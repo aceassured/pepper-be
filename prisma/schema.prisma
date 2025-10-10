@@ -104,6 +104,9 @@ model Order {
   payment   Payment? @relation("OrderPayment", fields: [paymentId], references: [id])
   paymentId Int?     @unique
 
+  // Relations 
+  progressTracker ProgressTracker[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -118,7 +121,7 @@ model Payment {
   userId Int?
 
   // Razorpay specific fields
-  razorpayOrderId   String?
+  razorpayOrderId   String?       @unique
   razorpayPaymentId String?
   razorpaySignature String?
   amountInPaise     Int
@@ -130,6 +133,64 @@ model Payment {
   captured          Boolean?
   metadata          Json?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Enum for each stage type
+enum StageType {
+  ORDER_CONFIRMED
+  NURSERY_ALLOCATION
+  GROWTH_PHASE
+  READY_FOR_DISPATCH
+  DELIVERED
+}
+
+// Enum for stage status
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+}
+
+model ProgressTracker {
+  id      Int   @id @default(autoincrement())
+  orderId Int    @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // ---- Stage 1: Order Confirmed ----
+  orderConfirmedStatus StageStatus @default(PENDING)
+  orderConfirmedStart  DateTime?
+  orderConfirmedEnd    DateTime?
+
+  // ---- Stage 2: Nursery Allocation ----
+  nurseryAllocationStatus StageStatus @default(PENDING)
+  nurseryAllocationStart  DateTime?
+  nurseryAllocationEnd    DateTime?
+
+  // ---- Stage 3: Growth Phase ----
+  growthPhaseStatus StageStatus @default(PENDING)
+  growthPhaseStart  DateTime?
+  growthPhaseEnd    DateTime?
+
+  // ---- Stage 4: Ready for Dispatch ----
+  readyForDispatchStatus StageStatus @default(PENDING)
+  readyForDispatchStart  DateTime?
+  readyForDispatchEnd    DateTime?
+
+  // ---- Stage 5: Delivered ----
+  deliveredStatus StageStatus @default(PENDING)
+  deliveredStart  DateTime?
+  deliveredEnd    DateTime?
+
+  // ---- Optional Additions ----
+  currentStage           StageType?
+  expectedCompletionDate DateTime?
+  progressPercentage     Int?       @default(0)
+  remarks                String?    @db.Text
+
+  // ---- Default tracking fields ----
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

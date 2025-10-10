@@ -1,5 +1,5 @@
 // src/orders/orders.controller.ts
-import { Controller, Post, Body, Get, Param, Req, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, Res, HttpStatus, ParseIntPipe } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import * as crypto from 'crypto';
@@ -10,7 +10,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) { }
 
   @Post(':userId')
-  createOrder(@Param('userId') userId: string, @Body() dto: CreateOrderDto) {
+  createOrder(@Param('userId',ParseIntPipe) userId: number, @Body() dto: CreateOrderDto) {
     return this.ordersService.createOrder(Number(userId), dto);
   }
 
