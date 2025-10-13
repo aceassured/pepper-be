@@ -62,10 +62,16 @@ export class UserService {
             if (!isPasswordValid)
                 throw new UnauthorizedException('Invalid credentials');
 
-            const payload = { sub: user.id, email: user.email };
+            const payload = { id: user.id, email: user.email };
             const token = await this.jwt.signAsync(payload);
 
-            return { message: 'Login successfull', token, user }
+            const loginDetails = {
+                ...user,
+                isAdmin: false,
+                token
+            }
+
+            return { message: 'Login successfull', user: loginDetails }
         } catch (error) {
             catchBlock(error)
         }

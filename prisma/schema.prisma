@@ -78,12 +78,12 @@ model Order {
   // product / order summary
   productName         String
   productId           Int?
-  deliveryBatch       String?
+  deliveryDate        DateTime?
   deliveryLocation    String?
   quantity            Int
   pricePerUnitInPaise Int
   totalAmountInPaise  Int
-  currency            String  @default("INR")
+  currency            String    @default("INR")
 
   // customer details
   fullName        String
@@ -156,8 +156,8 @@ enum StageStatus {
 
 model ProgressTracker {
   id      Int   @id @default(autoincrement())
-  orderId Int    @unique
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId Int   @unique
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   // ---- Stage 1: Order Confirmed ----
   orderConfirmedStatus StageStatus @default(PENDING)
@@ -193,4 +193,30 @@ model ProgressTracker {
   // ---- Default tracking fields ----
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Model for storing the admin credentials
+
+model Admin {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String    @unique
+  password  String
+  otp       String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Location {
+  id           Int      @id @default(autoincrement())
+  state        String
+  district     String
+  pinCode      String
+  minQuantity  Int
+  maxQuantity  Int
+  pricePerUnit Decimal  @db.Decimal(5, 2)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

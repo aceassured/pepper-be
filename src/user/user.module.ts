@@ -8,11 +8,12 @@ import { JwtModule } from "@nestjs/jwt";
 @Module({
     imports: [
         JwtModule.register({
-        secret: process.env.JWT_SECRET,
-        signOptions: {}
-    })],
+            secret: process.env.JWT_SECRET,
+            signOptions: {}
+        })],
     controllers: [UserController],
-    providers: [UserService]
+    providers: [UserService],
+    exports: [UserService, JwtModule]
 })
 
 export class UserModule { }
