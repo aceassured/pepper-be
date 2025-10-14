@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Search } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreateUserDto } from '../user/dto/create-user-dto';
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { catchBlock } from '../common/CatchBlock';
+import type { Response } from 'express';
+
 
 @Controller('admin')
 export class AdminController {
@@ -50,7 +51,7 @@ export class AdminController {
 
     // Fetch all locations
     @Get('fetch-all-locations/:page')
-    async fetchAllLocations(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('state') state: string, @Query('status', ParseBoolPipe) status: boolean) {
+    async fetchAllLocations(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('state') state: string, @Query('status') status: boolean) {
         return this.adminService.fetchAllLocations(page, search, state, status)
     }
 
@@ -124,6 +125,33 @@ export class AdminController {
     async getAllPaymentTransactions(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('status') status: string, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string,) {
         return this.adminService.fetchAllPaymentTransactions(page, search, status, fromDate, toDate)
     }
+
+    // GET /orders/:id/invoice
+    @Get('/orders/:id/invoice')
+    async downloadInvoice(
+        @Param('id', ParseIntPipe) id: number,
+        @Res() res: Response
+    ) {
+        const pdfBuffer = await this.adminService.generateInvoicePdfBuffer(id);
+
+        // ✅ Ensure pdfBuffer is defined
+        if (!pdfBuffer) {
+            return res.status(500).send('Failed to generate PDF');
+        }
+
+        const filename = `invoice-${id}.pdf`;
+
+        // ✅ Express Response.set() and .send() are correctly typed
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length.toString());
+
+        res.send(pdfBuffer); // ✅ works with Express Response type
+    }
+
+
+
+
 
 
 }
