@@ -1,9 +1,10 @@
 // src/orders/orders.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; // your Prisma service
 import { CreateOrderDto } from './dto/create-order.dto';
 import Razorpay from 'razorpay';
 import { catchBlock } from '../common/CatchBlock';
+import { RefundStatus } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -19,7 +20,7 @@ export class OrdersService {
     // Create order + Razorpay order
     async createOrder(userId: number, dto: CreateOrderDto) {
         try {
-            const totalAmountInPaise = Math.floor(Number(dto.pricePerUnit) * Number(dto.quantity) * 100);
+            const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
             // 1️⃣ Create Razorpay order
             const razorpayOrder = await this.razorpay.orders.create({
                 amount: totalAmountInPaise,
@@ -32,6 +33,7 @@ export class OrdersService {
 
             // 1️⃣ Get the most recently created order
             const lastOrder = await this.prisma.order.findFirst({
+                where: { isBulkUpload: false },
                 orderBy: { createdAt: 'desc' },
                 select: { orderId: true },
             });
@@ -74,10 +76,10 @@ export class OrdersService {
                     orderId: newOrderId,
                     productName: dto.productName,
                     productId: dto.productId,
-                    deliveryDate: dto.deliveryBatch,
+                    deliveryDate: dto.deliveryDate,
                     deliveryLocation: dto.deliveryLocation,
                     quantity: dto.quantity,
-                    pricePerUnitInPaise: dto.pricePerUnit,
+                    pricePerUnitInPaise: dto.pricePerUnitInPaise,
                     totalAmountInPaise,
                     currency: 'INR',
                     fullName: dto.fullName,
@@ -146,7 +148,7 @@ export class OrdersService {
                         { status: "PAID" }
                     ]
                 },
-                include: { payment: true, progressTracker: true },
+                include: { payment: true, progressTracker: true, refund: true },
                 orderBy: { createdAt: 'desc' },
             });
             return orders;
@@ -238,5 +240,55 @@ export class OrdersService {
             catchBlock(error)
         }
     }
+
+    // Request the refund for a specific order
+    async refundRequest(id: number) {
+        try {
+            const order = await this.prisma.order.findUnique({ where: { id } }) || (() => { throw new BadRequestException("No order found with the id") })()
+
+            const updatedOrder = await this.prisma.order.update({
+                where: { id },
+                data: {
+                    status: 'REFUNDED'
+                },
+                include: { payment: true, progressTracker: true, refund: true }
+            })
+
+            return { message: "Refund request raised successfully!", order: updatedOrder }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    // Update the refund status based on the webhook
+    async handleWebhookEvent(event: string, refund: any) {
+        const statusMap: Record<string, RefundStatus> = {
+            'refund.created': RefundStatus.INITIATED,
+            'refund.processed': RefundStatus.PROCESSING,
+            'refund.failed': RefundStatus.FAILED,
+            'refund.completed': RefundStatus.SUCCESS,
+        };
+
+        const mappedStatus = statusMap[event];
+        if (!mappedStatus) return;
+
+        await this.prisma.refund.updateMany({
+            where: { refundId: refund.id },
+            data: {
+                status: mappedStatus,
+                processedAt:
+                    mappedStatus === RefundStatus.PROCESSING ? new Date() : undefined,
+                completedAt:
+                    mappedStatus === RefundStatus.SUCCESS ? new Date() : undefined,
+                failureReason:
+                    mappedStatus === RefundStatus.FAILED
+                        ? refund.failure_reason || 'Unknown'
+                        : undefined,
+                metadata: refund,
+            },
+        });
+    }
+
 
 }

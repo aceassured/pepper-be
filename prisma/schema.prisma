@@ -30,6 +30,7 @@ model User {
   // Relations
   orders   Order[]
   payments Payment[]
+  callBack CallBack[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,7 +70,7 @@ enum PaymentStatus {
 
 model Order {
   id     Int   @id @default(autoincrement())
-  user   User? @relation(fields: [userId], references: [id])
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int?
 
   orderId String? @unique
@@ -93,18 +94,20 @@ model Order {
   state           String
   district        String
   pincode         String
+  isBulkUpload    Boolean @default(false)
 
-  paymentMethod PaymentMethod
-  termsAccepted Boolean       @default(false)
-  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod?
+  termsAccepted Boolean        @default(false)
+  status        OrderStatus    @default(PENDING)
   metadata      Json?
 
   // one-to-one relation
-  payment   Payment? @relation("OrderPayment", fields: [paymentId], references: [id])
+  payment   Payment? @relation("OrderPayment", fields: [paymentId], references: [id], onDelete: Cascade)
   paymentId Int?     @unique
 
   // Relations 
   progressTracker ProgressTracker[]
+  refund          Refund?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,7 +119,7 @@ model Payment {
 
   // one-to-one relation back to order
   order  Order? @relation("OrderPayment")
-  user   User?  @relation(fields: [userId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int?
 
   // Razorpay specific fields
@@ -207,6 +210,7 @@ model Admin {
   updatedAt DateTime  @updatedAt
 }
 
+// Modal for handling location
 model Location {
   id           Int      @id @default(autoincrement())
   state        String
@@ -218,4 +222,44 @@ model Location {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// Modal for handling refund
+
+enum RefundStatus {
+  INITIATED
+  PROCESSING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model Refund {
+  id      Int   @id @default(autoincrement())
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId Int   @unique
+
+  refundId      String?      @unique // Refund ID from Razorpay or other provider
+  amountInPaise Int
+  reason        String?
+  status        RefundStatus @default(INITIATED)
+  initiatedAt   DateTime     @default(now())
+  processedAt   DateTime?
+  completedAt   DateTime?
+  failureReason String?
+  metadata      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Storing the user callback details
+
+model CallBack {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

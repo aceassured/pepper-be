@@ -8,11 +8,19 @@ import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto'
 import { sendOtpToUser } from '../common/send-otp';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { OrderStatus, PaymentMethod, PaymentStatus, StageStatus, StageType } from '@prisma/client';
+import Razorpay from 'razorpay';
+import { CreateOrderDto } from '../orders/dto/create-order.dto';
 
 
 @Injectable()
 export class AdminService {
-    constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) { }
+    private razorpay: Razorpay;
+    constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {
+        this.razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+    }
 
     // Admin login
     async adminLogin(dto: LoginAdminDto) {
@@ -555,7 +563,7 @@ export class AdminService {
             const skip = (page - 1) * limit;
 
             // Build dynamic Prisma filter
-            const where: any = {};
+            const where: any = { status: "PAID" };
 
             // Search filter (matches multiple fields)
             if (search) {
@@ -716,6 +724,27 @@ export class AdminService {
         }
     }
 
+    // add order as the bluk upload through admin
+    async bulkOrder(dto: CreateOrderDto) {
+        try {
+            const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
+
+            const newOrder = await this.prisma.order.create({
+                data: {
+                    ...dto,
+                    status:'PAID',
+                    totalAmountInPaise: totalAmountInPaise,
+                    isBulkUpload: true
+                }
+            })
+
+            return { message: 'New bulk order created successfully!', order: newOrder }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
     // ==== End Order Management ====
 
     // ==== Start of payment managment ====
@@ -867,6 +896,7 @@ export class AdminService {
         }
     }
 
+    // Fetch all the enum values
     async fetchAllEnumValue() {
         try {
             const paymentMethods = Object.values(PaymentMethod)
@@ -889,6 +919,7 @@ export class AdminService {
         }
     }
 
+    // Fetch a specific order details
     async fetchSpecificOrderDetails(id: number) {
         try {
 
@@ -900,5 +931,44 @@ export class AdminService {
             catchBlock(error)
         }
     }
+
+    // --- Refund Function ---
+    async refundOrder(orderId: number) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { payment: true, refund: true },
+        });
+
+        if (!order) throw new NotFoundException('Order not found');
+        if (!order.payment) throw new BadRequestException('Payment not found for this order');
+        if (order.refund) throw new BadRequestException('Refund already processed for this order');
+        if (order.payment.status !== "CAPTURED") throw new BadRequestException('Payment not captured, cannot refund');
+
+        const amount = order.totalAmountInPaise;
+        if (!amount || amount <= 0) throw new BadRequestException('Invalid refund amount');
+
+        try {
+            const refund = await this.razorpay.payments.refund(order.payment.razorpayPaymentId, {
+                amount,
+                notes: { reason: 'Full refund requested' },
+            });
+
+            const refundRecord = await this.prisma.refund.create({
+                data: {
+                    orderId: order.id,
+                    refundId: refund.id,
+                    amountInPaise: refund.amount,
+                    status: 'PROCESSING',
+                    metadata: refund,
+                },
+            });
+
+            return { message: 'Refund accepted successfully!', refundRecord };
+        } catch (error) {
+            console.error('Razorpay refund error:', error);
+            throw new BadRequestException(`Refund failed: ${error.description || error.message}`);
+        }
+    }
+
 
 }

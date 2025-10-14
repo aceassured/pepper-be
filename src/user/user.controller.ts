@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Param, ParseIntPipe, Post } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { CreateUserDto } from "./dto/create-user-dto";
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from "./dto/otp.dto";
@@ -45,5 +45,11 @@ export class UserController {
     @Post('contact')
     async contact(@Body() dto: ContactDto) {
         return this.userService.contact(dto);
+    }
+
+    // Make a new callback
+    @Post('create-callback/:id')
+    async createCallBack(@Param('id', ParseIntPipe) id: number) {
+        return this.userService.makeCallBack(id)
     }
 }

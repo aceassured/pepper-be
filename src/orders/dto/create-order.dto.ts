@@ -24,14 +24,15 @@ export class CreateOrderDto {
     @Type(() => Number)
     productId?: number;
 
+    @IsOptional()
     @IsString()
     @IsNotEmpty()
-    productName: string;
+    productName?: string;
 
     @IsNotEmpty()
     @Type(() => Date)
     @IsDate()
-    deliveryBatch: Date;
+    deliveryDate: Date;
 
     @IsOptional()
     @IsString()
@@ -45,7 +46,7 @@ export class CreateOrderDto {
     // pricePerUnit in **Rupees** accepted from client; server will convert to paise
     @IsNotEmpty()
     @IsString()
-    pricePerUnit: string;
+    pricePerUnitInPaise: string;
 
     // customer info
     @IsString()
@@ -80,13 +81,15 @@ export class CreateOrderDto {
     @IsNotEmpty()
     pincode: string;
 
+    @IsOptional()
     @IsEnum(PaymentMethod)
-    paymentMethod: PaymentMethod;
+    paymentMethod?: PaymentMethod;
 
     // user must accept terms
+    @IsOptional()
     @IsBoolean()
     @Equals(true, { message: 'termsAccepted must be true' })
-    termsAccepted: boolean;
+    termsAccepted?: boolean;
 
     // optional: if you want to accept coupon/metadata
     @IsOptional()

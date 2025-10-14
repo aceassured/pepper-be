@@ -187,6 +187,29 @@ export class UserService {
         }
     }
 
+    // Make a new callback
+    async makeCallBack(id: number) {
+        try {
+            await this.prisma.user.findUnique({ where: { id } }) || (() => { throw new BadRequestException('No user found with the id') })()
+
+            const newCallBack = await this.prisma.callBack.create({
+                data: {
+                    user: {
+                        connect: {
+                            id: id
+                        }
+                    }
+                },
+                include: { user: true }
+            })
+
+            return { message: "New callback saved successfully!", callBack: newCallBack }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
 
 
 }

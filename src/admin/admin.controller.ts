@@ -5,6 +5,7 @@ import { CreateUserDto } from '../user/dto/create-user-dto';
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import type { Response } from 'express';
+import { CreateOrderDto } from '../orders/dto/create-order.dto';
 
 
 @Controller('admin')
@@ -117,6 +118,11 @@ export class AdminController {
         return this.adminService.fetchSpecificOrderDetails(id)
     }
 
+    @Post('bulk-order')
+    async createBulkOrder(@Body() dto: CreateOrderDto) {
+        return this.adminService.bulkOrder(dto)
+    }
+
     // ==== End Order Management ====
 
     // ==== Start of payment managment ====
@@ -139,8 +145,14 @@ export class AdminController {
         return this.adminService.fetchAllEnumValue()
     }
 
+    // --- Refund Endpoint ---
+    @Post(':orderId/refund')
+    async refundOrder(
+        @Param('orderId', ParseIntPipe) orderId: number,
+    ) {
+        return this.adminService.refundOrder(orderId)
+    }
+
     // ==== End of payment managment ====
-
-
 
 }
