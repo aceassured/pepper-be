@@ -12,6 +12,8 @@ import {
     IsBoolean,
     Equals,
     Matches,
+    IsDateString,
+    IsDate,
 } from 'class-validator';
 
 import { PaymentMethod } from '@prisma/client';
@@ -26,9 +28,10 @@ export class CreateOrderDto {
     @IsNotEmpty()
     productName: string;
 
-    @IsOptional()
-    @IsString()
-    deliveryBatch?: string;
+    @IsNotEmpty()
+    @Type(() => Date)
+    @IsDate()
+    deliveryBatch: Date;
 
     @IsOptional()
     @IsString()
@@ -40,9 +43,9 @@ export class CreateOrderDto {
     quantity: number;
 
     // pricePerUnit in **Rupees** accepted from client; server will convert to paise
-    @IsNumber()
-    @Type(() => Number)
-    pricePerUnit: number;
+    @IsNotEmpty()
+    @IsString()
+    pricePerUnit: string;
 
     // customer info
     @IsString()

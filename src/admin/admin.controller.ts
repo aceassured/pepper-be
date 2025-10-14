@@ -111,5 +111,19 @@ export class AdminController {
 
     // ==== End Order Management ====
 
+    // ==== Start of payment managment ====
+
+    //Fetch all the card details for payment dashboard
+    @Get('get-payment-dashboard-cards')
+    async getPaymentDashboardCards() {
+        return this.adminService.fetchPaymentDashboardCards()
+    }
+
+    // Fetch all the payment transcation details
+    @Get('get-all-transactions/:page')
+    async getAllPaymentTransactions(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('status') status: string, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string,) {
+        return this.adminService.fetchAllPaymentTransactions(page, search, status, fromDate, toDate)
+    }
+
 
 }

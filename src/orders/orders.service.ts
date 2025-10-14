@@ -19,7 +19,7 @@ export class OrdersService {
     // Create order + Razorpay order
     async createOrder(userId: number, dto: CreateOrderDto) {
         try {
-            const totalAmountInPaise = dto.pricePerUnit * dto.quantity * 100;
+            const totalAmountInPaise = Math.floor(Number(dto.pricePerUnit) * Number(dto.quantity) * 100);
             // 1️⃣ Create Razorpay order
             const razorpayOrder = await this.razorpay.orders.create({
                 amount: totalAmountInPaise,
@@ -74,10 +74,10 @@ export class OrdersService {
                     orderId: newOrderId,
                     productName: dto.productName,
                     productId: dto.productId,
-                    deliveryBatch: dto.deliveryBatch,
+                    deliveryDate: dto.deliveryBatch,
                     deliveryLocation: dto.deliveryLocation,
                     quantity: dto.quantity,
-                    pricePerUnitInPaise: Math.round(dto.pricePerUnit * 100),
+                    pricePerUnitInPaise: dto.pricePerUnit,
                     totalAmountInPaise,
                     currency: 'INR',
                     fullName: dto.fullName,

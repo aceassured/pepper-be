@@ -8,6 +8,7 @@ import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto'
 import { sendOtpToUser } from '../common/send-otp';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { OrderStatus, StageType } from '@prisma/client';
+import { from, take } from 'rxjs';
 
 @Injectable()
 export class AdminService {
@@ -581,6 +582,7 @@ export class AdminService {
             if (startDate && endDate) {
                 const start = new Date(startDate);
                 const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
                 where.deliveryDate = {
                     gte: start,
                     lte: end,
@@ -712,8 +714,158 @@ export class AdminService {
         }
     }
 
-
     // ==== End Order Management ====
+
+    // ==== Start of payment managment ====
+
+    //Fetch all the card details for payment dashboard
+    async fetchPaymentDashboardCards() {
+        try {
+            const currentDate = new Date();
+            const startDate = new Date(currentDate);
+            startDate.setMonth(currentDate.getMonth() - 1);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+
+            // Run queries in parallel for better performance
+            const [completedOrders, pendingOrders] = await Promise.all([
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PAID',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PENDING',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { id: true },
+                }),
+            ]);
+
+            // Calculate total revenue from completed payments
+            const totalRevenue = completedOrders.reduce(
+                (acc, order) => acc + order.totalAmountInPaise,
+                0
+            );
+
+            // Prepare card data
+            const cards = [
+                {
+                    title: 'Total Revenue',
+                    amount: totalRevenue,
+                },
+                {
+                    title: 'Successful Payments',
+                    amount: completedOrders.length || 0,
+                },
+                {
+                    title: 'Pending Payments',
+                    amount: pendingOrders.length || 0,
+                },
+                {
+                    title: 'Total Refunded',
+                    amount: 0, // Placeholder for future logic
+                },
+            ];
+
+            return {
+                message: 'Showing all the payment dashboard cards',
+                cards,
+            };
+        } catch (error) {
+            catchBlock(error);
+        }
+    }
+
+    // Fetch all the payment transcation details
+    async fetchAllPaymentTransactions(
+        page: number,
+        search?: string,
+        status?: string,
+        fromDate?: string,
+        toDate?: string
+    ) {
+        try {
+            const limit = 5;
+            const currentPage = Math.max(page || 1, 1);
+            const skip = (currentPage - 1) * limit;
+
+            const where: any = {};
+
+            // 🔍 Search filter (partial match)
+            if (search?.trim()) {
+                where.OR = [
+                    { fullName: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                    { orderId: { contains: search, mode: 'insensitive' } },
+                ];
+            }
+
+            // ⚙️ Status filter (enum-safe)
+            if (status) {
+                const statusOption = status.toUpperCase() as OrderStatus;
+                if (!Object.values(OrderStatus).includes(statusOption)) {
+                    throw new BadRequestException('Please enter a valid status option');
+                }
+                where.status = statusOption;
+            }
+
+            // 📅 Date range filter
+            if (fromDate && toDate) {
+                const startDate = new Date(fromDate);
+                const endDate = new Date(toDate);
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    throw new BadRequestException('Invalid date format provided');
+                }
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+
+                where.createdAt = { gte: startDate, lte: endDate };
+            }
+
+            // ⚡ Fetch data + count concurrently
+            const [allOrders, totalCount] = await Promise.all([
+                this.prisma.order.findMany({
+                    where,
+                    skip,
+                    take: limit,
+                    include: {
+                        payment: true,
+                        progressTracker: true,
+                    },
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                }),
+                this.prisma.order.count({ where }),
+            ]);
+
+            const totalPages = Math.ceil(totalCount / limit) || 1;
+
+            const orderDetails = {
+                allOrders,
+                totalCount,
+                currentPage,
+                totalPage: totalPages,
+                perPage: limit,
+            };
+
+            return {
+                message: 'Showing all the order transactions',
+                allOrders: orderDetails,
+            };
+        } catch (error) {
+            catchBlock(error);
+        }
+    }
+
+
 
 
 }
