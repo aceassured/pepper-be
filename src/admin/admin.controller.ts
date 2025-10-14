@@ -126,31 +126,34 @@ export class AdminController {
         return this.adminService.fetchAllPaymentTransactions(page, search, status, fromDate, toDate)
     }
 
-    // GET /orders/:id/invoice
-    @Get('/orders/:id/invoice')
-    async downloadInvoice(
-        @Param('id', ParseIntPipe) id: number,
-        @Res() res: Response
-    ) {
-        const pdfBuffer = await this.adminService.generateInvoicePdfBuffer(id);
+    // // GET /orders/:id/invoice
+    // @Get('/orders/:id/invoice')
+    // async downloadInvoice(
+    //     @Param('id', ParseIntPipe) id: number,
+    //     @Res() res: Response
+    // ) {
+    //     const pdfBuffer = await this.adminService.generateInvoicePdfBuffer(id);
 
-        // ✅ Ensure pdfBuffer is defined
-        if (!pdfBuffer) {
-            return res.status(500).send('Failed to generate PDF');
-        }
+    //     // ✅ Ensure pdfBuffer is defined
+    //     if (!pdfBuffer) {
+    //         return res.status(500).send('Failed to generate PDF');
+    //     }
 
-        const filename = `invoice-${id}.pdf`;
+    //     const filename = `invoice-${id}.pdf`;
 
-        // ✅ Express Response.set() and .send() are correctly typed
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Length', pdfBuffer.length.toString());
+    //     // ✅ Express Response.set() and .send() are correctly typed
+    //     res.setHeader('Content-Type', 'application/pdf');
+    //     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    //     res.setHeader('Content-Length', pdfBuffer.length.toString());
 
-        res.send(pdfBuffer); // ✅ works with Express Response type
+    //     res.send(pdfBuffer); // ✅ works with Express Response type
+    // }
+
+    //Get all the enum values
+    @Get('/fetch-all-enums')
+    async fetchAllEnumValues() {
+        return this.adminService.fetchAllEnumValue()
     }
-
-
-
 
 
 
