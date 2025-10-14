@@ -8,8 +8,6 @@ import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto'
 import { sendOtpToUser } from '../common/send-otp';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { OrderStatus, PaymentMethod, PaymentStatus, StageStatus, StageType } from '@prisma/client';
-import * as puppeteer from 'puppeteer';
-import { buildInvoiceHtml } from '../common/invoice.template';
 
 
 @Injectable()
@@ -869,48 +867,6 @@ export class AdminService {
         }
     }
 
-    // async generateInvoicePdfBuffer(orderId: number) {
-    //     // fetch order with related payment and progressTracker
-    //     const order = await this.prisma.order.findUnique({
-    //         where: { id: orderId },
-    //         include: { payment: true, progressTracker: true },
-    //     });
-
-    //     if (!order) {
-    //         throw new NotFoundException('Order not found');
-    //     }
-
-    //     const html = buildInvoiceHtml(order);
-
-    //     // Launch puppeteer
-    //     const browser = await puppeteer.launch({
-    //         args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    //         // headless: true by default
-    //     });
-    //     try {
-    //         const page = await browser.newPage();
-
-    //         // Set a reasonable viewport so layout matches expected
-    //         await page.setViewport({ width: 1200, height: 800 });
-
-    //         // Set content and wait until network idle so images load
-    //         await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    //         // Generate PDF buffer
-    //         const pdfBuffer = await page.pdf({
-    //             format: 'A4',
-    //             printBackground: true,
-    //             margin: { top: '16mm', bottom: '16mm', left: '12mm', right: '12mm' },
-    //         });
-
-    //         return pdfBuffer;
-    //     } catch (error) {
-    //         catchBlock(error)
-    //     } finally {
-    //         await browser.close();
-    //     }
-    // }
-
     async fetchAllEnumValue() {
         try {
             const paymentMethods = Object.values(PaymentMethod)
@@ -928,6 +884,18 @@ export class AdminService {
             }
 
             return { message: "Showing all the list of enum values", enumValues }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async fetchSpecificOrderDetails(id: number) {
+        try {
+
+            const order = await this.prisma.order.findUnique({ where: { id }, include: { payment: true, progressTracker: true } })
+
+            return { message: `Showing the specific order data of order ${id}`, order }
+
         } catch (error) {
             catchBlock(error)
         }

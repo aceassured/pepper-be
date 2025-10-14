@@ -92,6 +92,8 @@ export class AdminController {
 
     // ==== End Location Management ====
 
+    // ==== Start Order Management ====
+
     // Fetch all orders with advanced filtering and pagination
     @Get('fetch-order-details/:page')
     async fetchOrderDetails(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('status') status: string, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string, @Query('state') state: string) {
@@ -110,6 +112,11 @@ export class AdminController {
         return this.adminService.updateOrderStatus(id, status)
     }
 
+    @Get('fetch-specific-order/:id')
+    async fetchSpecificOrderDetails(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.fetchSpecificOrderDetails(id)
+    }
+
     // ==== End Order Management ====
 
     // ==== Start of payment managment ====
@@ -126,34 +133,13 @@ export class AdminController {
         return this.adminService.fetchAllPaymentTransactions(page, search, status, fromDate, toDate)
     }
 
-    // // GET /orders/:id/invoice
-    // @Get('/orders/:id/invoice')
-    // async downloadInvoice(
-    //     @Param('id', ParseIntPipe) id: number,
-    //     @Res() res: Response
-    // ) {
-    //     const pdfBuffer = await this.adminService.generateInvoicePdfBuffer(id);
-
-    //     // ✅ Ensure pdfBuffer is defined
-    //     if (!pdfBuffer) {
-    //         return res.status(500).send('Failed to generate PDF');
-    //     }
-
-    //     const filename = `invoice-${id}.pdf`;
-
-    //     // ✅ Express Response.set() and .send() are correctly typed
-    //     res.setHeader('Content-Type', 'application/pdf');
-    //     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    //     res.setHeader('Content-Length', pdfBuffer.length.toString());
-
-    //     res.send(pdfBuffer); // ✅ works with Express Response type
-    // }
-
     //Get all the enum values
     @Get('/fetch-all-enums')
     async fetchAllEnumValues() {
         return this.adminService.fetchAllEnumValue()
     }
+
+    // ==== End of payment managment ====
 
 
 
