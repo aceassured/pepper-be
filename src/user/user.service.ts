@@ -12,6 +12,7 @@ import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { sendOtpToUser } from '../common/send-otp';
 import { ContactDto } from './dto/contact.dto';
 import { sendContactMail } from '../common/sendContactMail';
+import * as pincodes from 'indian-pincodes'
 
 @Injectable()
 export class UserService {
@@ -31,8 +32,11 @@ export class UserService {
 
             const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+            const name = dto?.email?.split('@')[0]
+
             const user = await this.prisma.user.create({
                 data: {
+                    name,
                     email: dto.email,
                     password: hashedPassword,
                 },
@@ -40,6 +44,7 @@ export class UserService {
                     id: true,
                     email: true,
                     createdAt: true,
+                    name: true
                 },
             });
 
@@ -205,6 +210,53 @@ export class UserService {
 
             return { message: "New callback saved successfully!", callBack: newCallBack }
 
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    /**
+  * Get all PIN codes for a given state and district
+  * @param state - e.g., 'Tamil Nadu'
+  * @param district - e.g., 'Coimbatore'
+  * @returns array of pincodes as strings
+  */
+    getPincodesByStateAndDistrict(state: string, district: string) {
+        try {
+            if (!state || !district) {
+                throw new Error('Both state and district are required');
+            }
+
+            const stateName = state.trim();
+            const districtName = district.trim();
+
+            let result: any[] = [];
+
+            // Try district-level method first (if available)
+            if (typeof (pincodes as any).getPincodesByDistrict === 'function') {
+                try {
+                    result = (pincodes as any).getPincodesByDistrict(districtName, stateName);
+                } catch (err) {
+                    console.error('Error fetching by district:', err);
+                }
+            }
+
+
+
+            // Fallback: get all by state, then filter by district
+            if ((!result || result.length === 0) && typeof (pincodes as any).getPincodesByState === 'function') {
+                try {
+                    const allStatePincodes = (pincodes as any).getPincodesByState(stateName);
+                    result = allStatePincodes.filter((entry: any) => {
+                        const entryDistrict =
+                            (entry.district || entry.District || '').trim().toLowerCase();
+                        return entryDistrict === districtName.toLowerCase();
+                    });
+                } catch (err) {
+                    catchBlock(err)
+                }
+            }
+            return { message: 'Showing all the pincodes', result }
         } catch (error) {
             catchBlock(error)
         }

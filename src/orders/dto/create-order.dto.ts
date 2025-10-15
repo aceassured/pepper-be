@@ -81,6 +81,10 @@ export class CreateOrderDto {
     @IsNotEmpty()
     pincode: string;
 
+    @IsString()
+    @IsNotEmpty()
+    areaName: string;
+
     @IsOptional()
     @IsEnum(PaymentMethod)
     paymentMethod?: PaymentMethod;

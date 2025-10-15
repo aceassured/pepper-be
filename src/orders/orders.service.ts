@@ -33,7 +33,6 @@ export class OrdersService {
 
             // 1️⃣ Get the most recently created order
             const lastOrder = await this.prisma.order.findFirst({
-                where: { isBulkUpload: false },
                 orderBy: { createdAt: 'desc' },
                 select: { orderId: true },
             });
@@ -90,6 +89,7 @@ export class OrdersService {
                     state: dto.state,
                     district: dto.district,
                     pincode: dto.pincode,
+                    areaName: dto.areaName,
                     paymentMethod: dto.paymentMethod,
                     termsAccepted: dto.termsAccepted,
                     status: 'PENDING',
@@ -249,7 +249,9 @@ export class OrdersService {
             const updatedOrder = await this.prisma.order.update({
                 where: { id },
                 data: {
-                    status: 'REFUNDED'
+                    status: 'REFUNDED',
+                    refundRequestDate: new Date(),
+                    refundStatus: 'PENDING'
                 },
                 include: { payment: true, progressTracker: true, refund: true }
             })

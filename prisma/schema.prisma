@@ -68,6 +68,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum OrderRefundStatus {
+  PENDING
+  APPROVED
+  CANCELLED
+}
+
 model Order {
   id     Int   @id @default(autoincrement())
   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -94,12 +100,15 @@ model Order {
   state           String
   district        String
   pincode         String
+  areaName        String  
   isBulkUpload    Boolean @default(false)
 
-  paymentMethod PaymentMethod?
-  termsAccepted Boolean        @default(false)
-  status        OrderStatus    @default(PENDING)
-  metadata      Json?
+  paymentMethod     PaymentMethod?
+  termsAccepted     Boolean        @default(false)
+  status            OrderStatus    @default(PENDING)
+  refundRequestDate DateTime?
+  refundStatus      OrderRefundStatus?
+  metadata          Json?
 
   // one-to-one relation
   payment   Payment? @relation("OrderPayment", fields: [paymentId], references: [id], onDelete: Cascade)

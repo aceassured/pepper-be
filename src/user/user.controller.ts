@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, ParseIntPipe, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, Query } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { CreateUserDto } from "./dto/create-user-dto";
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from "./dto/otp.dto";
@@ -51,5 +51,14 @@ export class UserController {
     @Post('create-callback/:id')
     async createCallBack(@Param('id', ParseIntPipe) id: number) {
         return this.userService.makeCallBack(id)
+    }
+
+    // Fetch all the pincodes
+    @Get('fetch-all-pincodes')
+    getPincodes(
+        @Query('state') state: string,
+        @Query('district') district: string,
+    ) {
+        return this.userService.getPincodesByStateAndDistrict(state, district);
     }
 }

@@ -7,9 +7,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto';
 import { sendOtpToUser } from '../common/send-otp';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { OrderStatus, PaymentMethod, PaymentStatus, StageStatus, StageType } from '@prisma/client';
+import { OrderRefundStatus, OrderStatus, PaymentMethod, PaymentStatus, StageStatus, StageType } from '@prisma/client';
 import Razorpay from 'razorpay';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
+import { contains } from 'class-validator';
 
 
 @Injectable()
@@ -729,14 +730,71 @@ export class AdminService {
         try {
             const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
 
+            const currentYear = new Date().getFullYear();
+
+            // 1️⃣ Get the most recently created order
+            const lastOrder = await this.prisma.order.findFirst({
+                orderBy: { createdAt: 'desc' },
+                select: { orderId: true },
+            });
+
+            let nextNumber = 1;
+
+            if (lastOrder && lastOrder.orderId) {
+                // Match "KP<year>-<number>" with variable length number
+                const match = lastOrder.orderId.match(/^KP(\d{4})-(\d+)$/);
+
+                if (match) {
+                    const lastYear = parseInt(match[1]);
+                    const lastNum = parseInt(match[2]);
+
+                    if (lastYear === currentYear) {
+                        // Same year → increment last number
+                        nextNumber = lastNum + 1;
+                    } else {
+                        // New year → reset counter
+                        nextNumber = 1;
+                    }
+                }
+            }
+
+            // 2️⃣ Format number with leading zeros (at least 4 digits)
+            const nextNumberStr = nextNumber.toString().padStart(4, '0');
+
+            // 3️⃣ Combine parts into final format
+            const newOrderId = `KP${currentYear}-${nextNumberStr}`;
+
             const newOrder = await this.prisma.order.create({
                 data: {
                     ...dto,
-                    status:'PAID',
+                    orderId:newOrderId,
+                    status: 'PAID',
                     totalAmountInPaise: totalAmountInPaise,
                     isBulkUpload: true
-                }
+                },
+                include: { progressTracker: true }
             })
+
+            // ✅ Create initial Progress Tracker record (all pending)
+            await this.prisma.progressTracker.create({
+                data: {
+                    order: {
+                        connect: {
+                            id: newOrder.id
+                        }
+                    },
+                    orderConfirmedStatus: 'COMPLETED',
+                    orderConfirmedStart: newOrder.createdAt,
+                    orderConfirmedEnd: new Date(),
+                    nurseryAllocationStatus: 'IN_PROGRESS',
+                    nurseryAllocationStart: new Date(),
+                    growthPhaseStatus: 'PENDING',
+                    readyForDispatchStatus: 'PENDING',
+                    deliveredStatus: 'PENDING',
+                    currentStage: 'NURSERY_ALLOCATION',
+                    progressPercentage: 20,
+                },
+            });
 
             return { message: 'New bulk order created successfully!', order: newOrder }
 
@@ -750,18 +808,26 @@ export class AdminService {
     // ==== Start of payment managment ====
 
     //Fetch all the card details for payment dashboard
-    async fetchPaymentDashboardCards() {
+    async fetchPaymentDashboardCards(fromDate?: string, toDate?: string) {
         try {
-            const currentDate = new Date();
-            const startDate = new Date(currentDate);
-            startDate.setMonth(currentDate.getMonth() - 1);
-            startDate.setHours(0, 0, 0, 0);
+            let startDate: Date;
+            let endDate: Date;
 
-            const endDate = new Date();
-            endDate.setHours(23, 59, 59, 999);
+            if (fromDate && toDate && !isNaN(Date.parse(fromDate)) && !isNaN(Date.parse(toDate))) {
+                startDate = new Date(fromDate);
+                startDate.setHours(0, 0, 0, 0);
 
-            // Run queries in parallel for better performance
-            const [completedOrders, pendingOrders] = await Promise.all([
+                endDate = new Date(toDate);
+                endDate.setHours(23, 59, 59, 999);
+            } else {
+                const now = new Date();
+                startDate = new Date(new Date().setMonth(now.getMonth() - 1));
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date();
+                endDate.setHours(23, 59, 59, 999);
+            }
+
+            const [completedOrders, pendingCount] = await Promise.all([
                 this.prisma.order.findMany({
                     where: {
                         status: 'PAID',
@@ -769,45 +835,27 @@ export class AdminService {
                     },
                     select: { totalAmountInPaise: true },
                 }),
-                this.prisma.order.findMany({
+                this.prisma.order.count({
                     where: {
                         status: 'PENDING',
                         createdAt: { gte: startDate, lte: endDate },
                     },
-                    select: { id: true },
                 }),
             ]);
 
-            // Calculate total revenue from completed payments
             const totalRevenue = completedOrders.reduce(
-                (acc, order) => acc + order.totalAmountInPaise,
-                0
+                (sum, o) => sum + o.totalAmountInPaise,
+                0,
             );
 
-            // Prepare card data
             const cards = [
-                {
-                    title: 'Total Revenue',
-                    amount: totalRevenue,
-                },
-                {
-                    title: 'Successful Payments',
-                    amount: completedOrders.length || 0,
-                },
-                {
-                    title: 'Pending Payments',
-                    amount: pendingOrders.length || 0,
-                },
-                {
-                    title: 'Total Refunded',
-                    amount: 0, // Placeholder for future logic
-                },
+                { title: 'Total Revenue', amount: totalRevenue },
+                { title: 'Successful Payments', amount: completedOrders.length },
+                { title: 'Pending Payments', amount: pendingCount },
+                { title: 'Total Refunded', amount: 0 }, // placeholder
             ];
 
-            return {
-                message: 'Showing all the payment dashboard cards',
-                cards,
-            };
+            return { message: 'Showing all the payment dashboard cards', cards };
         } catch (error) {
             catchBlock(error);
         }
@@ -904,6 +952,8 @@ export class AdminService {
             const paymentOrderStatus = Object.values(PaymentStatus)
             const stageTypes = Object.values(StageType)
             const stateStatus = Object.values(StageStatus)
+            const orderRefundStatus = Object.values(OrderRefundStatus)
+            
 
             const enumValues = {
                 paymentMethods,
@@ -932,12 +982,203 @@ export class AdminService {
         }
     }
 
-    // --- Refund Function ---
+    //==== refund management ====
+    // Fetch cards data for refund dashboard
+    async fetchRefundDashboardCards(fromDate?: string, toDate?: string) {
+        try {
+            // Define date filter
+            let dateFilter: any = {};
+            if (fromDate && toDate) {
+                const startDate = new Date(fromDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(toDate);
+                endDate.setHours(23, 59, 59, 999);
+
+                dateFilter = {
+                    gte: startDate,
+                    lte: endDate,
+                };
+            }
+
+            // Run all counts in parallel
+            const [totalRequests, pendingRequests, approvedRequests, cancelledRequests] =
+                await Promise.all([
+                    // 1️⃣ Total refund requests (orders with REFUNDED status)
+                    this.prisma.order.count({
+                        where: {
+                            status: 'REFUNDED',
+                            ...(dateFilter.gte && {
+                                refundRequestDate: dateFilter,
+                            }),
+                        },
+                    }),
+
+                    // 2️⃣ Pending requests (REFUNDED orders without any refund record)
+                    this.prisma.order.count({
+                        where: {
+                            status: 'REFUNDED',
+                            refund: null,
+                            ...(dateFilter.gte && {
+                                refundRequestDate: dateFilter,
+                            }),
+                        },
+                    }),
+
+                    // 3️⃣ Approved / Processing / Success refunds (Refund exists with specific status)
+                    this.prisma.order.count({
+                        where: {
+                            refund: {
+                                is: {
+                                    status: { in: ['INITIATED', 'PROCESSING', 'SUCCESS'] },
+                                    ...(dateFilter.gte && { createdAt: dateFilter }),
+                                },
+                            },
+                        },
+                    }),
+
+                    // 4️⃣ Cancelled refunds
+                    this.prisma.order.count({
+                        where: {
+                            refundStatus: 'CANCELLED',
+                            ...(dateFilter.gte && { createdAt: dateFilter }),
+                        },
+                    })
+                ]);
+
+            //  Prepare dashboard cards
+            const cards = [
+                {
+                    title: 'Total Requests',
+                    value: totalRequests,
+                    bottomText: 'All refund requests',
+                },
+                {
+                    title: 'Pending',
+                    value: pendingRequests,
+                    bottomText: 'Needs attention',
+                },
+                {
+                    title: 'Approved',
+                    value: approvedRequests,
+                    bottomText: 'Processed',
+                },
+                {
+                    title: 'Declined',
+                    value: cancelledRequests,
+                    bottomText: 'Rejected',
+                },
+            ];
+
+            return {
+                message: 'Showing all the cards for refund dashboard',
+                cards,
+            };
+        } catch (error) {
+            catchBlock(error);
+        }
+    }
+
+
+    // Fetch all the refund transcation details
+    async fetchAllRefundRequests(
+        page: number,
+        search?: string,
+        status?: string,
+        fromDate?: string,
+        toDate?: string
+    ) {
+        try {
+            const limit = 5;
+            const skip = (page - 1) * limit;
+
+            const where: any = {
+                status: 'REFUNDED', // All refund-related orders
+            };
+
+            // 🔍 Search filter
+            if (search) {
+                where.OR = [
+                    { fullName: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { orderId: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                ];
+            }
+
+            // 📅 Date filter
+            let dateFilter: any = {};
+            if (fromDate && toDate) {
+                const startDate = new Date(fromDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(toDate);
+                endDate.setHours(23, 59, 59, 999);
+
+                dateFilter = {
+                    gte: startDate,
+                    lte: endDate,
+                };
+            }
+
+            // 🧾 Status filter
+            if (status) {
+                const checkStatus = status as OrderRefundStatus;
+                const statusValue = Object.values(OrderRefundStatus).includes(checkStatus)
+                    ? checkStatus
+                    : null;
+
+                if (!statusValue)
+                    throw new BadRequestException('Enter a valid status value');
+
+                // Directly filter using refundStatus field in Order model
+                where.refundStatus = statusValue;
+
+                // Apply date filter (if provided)
+                if (dateFilter.gte) {
+                    where.AND = [
+                        { refundStatus: statusValue },
+                        { refundRequestDate: dateFilter },
+                    ];
+                }
+            } else if (dateFilter.gte) {
+                // Apply only date range without status
+                where.refundRequestDate = dateFilter;
+            }
+
+
+            // 🔄 Fetch data
+            const [allRefundOrders, totalCount] = await Promise.all([
+                this.prisma.order.findMany({
+                    where,
+                    skip,
+                    take: limit,
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        refund: true, // include refund info for clarity
+                    },
+                }),
+                this.prisma.order.count({ where }),
+            ]);
+
+            const allRecords = {
+                allRefundOrders,
+                totalCount,
+                currentPage: page,
+                perPage: limit,
+                totalPage: Math.ceil(totalCount / limit) || 1,
+            };
+
+            return { message: 'Showing the refund dashboard data', allRecords };
+        } catch (error) {
+            catchBlock(error);
+        }
+    }
+
+    // Refund Function
     async refundOrder(orderId: number) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
             include: { payment: true, refund: true },
-        });
+        }) || (() => { throw new BadRequestException('No order found with the id') })()
 
         if (!order) throw new NotFoundException('Order not found');
         if (!order.payment) throw new BadRequestException('Payment not found for this order');
@@ -953,6 +1194,15 @@ export class AdminService {
                 notes: { reason: 'Full refund requested' },
             });
 
+            const updatedOrder = await this.prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    refundStatus: 'APPROVED'
+                },
+                include: { refund: true }
+            })
+
+
             const refundRecord = await this.prisma.refund.create({
                 data: {
                     orderId: order.id,
@@ -963,12 +1213,190 @@ export class AdminService {
                 },
             });
 
-            return { message: 'Refund accepted successfully!', refundRecord };
+            return { message: 'Refund accepted successfully!', refundRecord, order: updatedOrder };
         } catch (error) {
             console.error('Razorpay refund error:', error);
             throw new BadRequestException(`Refund failed: ${error.description || error.message}`);
         }
     }
+
+    // Cancel Refund order
+    async cancelRefundOrder(orderId: number) {
+        try {
+            const order = await this.prisma.order.findUnique({
+                where: { id: orderId },
+                include: { payment: true, refund: true },
+            }) || (() => { throw new BadRequestException('No order found with the id') })()
+
+            const updatedOrder = await this.prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    refundStatus: 'CANCELLED'
+                },
+                include: { refund: true }
+            })
+
+            return { message: "Refund request cancelled successfully!", order: updatedOrder }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    // Export all refund data
+    async exportRefundData() {
+        try {
+            const allOrders = await this.prisma.order.findMany({
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                include: { refund: true }
+            })
+            return { message: 'Showing all the refund records for export data', allOrders }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    //==== End of refund management ====
+
+    // ==== callback module ====
+    //Fetch all users
+    async fetchAllUsers(page: number, search?: string, fromDate?: string, toDate?: string) {
+        try {
+            const limit = 5
+            const skip = (page - 1) * limit
+            const where: any = {}
+
+            if (search) {
+                where.OR = [
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { name: { contains: search, mode: 'insensitive' } }
+                ]
+            }
+
+            if (fromDate && toDate) {
+                const startDate = new Date(fromDate)
+                startDate.setHours(0, 0, 0, 0)
+                const endDate = new Date(toDate)
+                endDate.setHours(23, 59, 59, 999)
+
+                where.createdAt = {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+
+            const [allUsers, totalCount] = await Promise.all([
+                this.prisma.user.findMany({
+                    where,
+                    skip,
+                    take: limit,
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }),
+                this.prisma.user.count({
+                    where
+                })
+            ])
+
+            const allUserDetails = {
+                allUsers,
+                totalCount,
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit) || 1,
+                perPage: limit
+
+            }
+
+            return { message: 'Showing all the users', allUserDetails }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    //Fetch all callbacks
+    async fetchAllCallbacks(page: number, search?: string, fromDate?: string, toDate?: string) {
+        try {
+            const limit = 5
+            const skip = (page - 1) * limit
+            const where: any = {}
+
+            if (search) {
+                where.OR = [
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                    { message: { contains: search, mode: 'insensitive' } }
+                ]
+            }
+
+            if (fromDate && toDate) {
+                const startDate = new Date(fromDate)
+                startDate.setHours(0, 0, 0, 0)
+                const endDate = new Date(toDate)
+                endDate.setHours(23, 59, 59, 999)
+
+                where.createdAt = {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+
+            const [allCallbacks, totalCount] = await Promise.all([
+                this.prisma.contactForm.findMany({
+                    where,
+                    skip,
+                    take: limit,
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }),
+                this.prisma.contactForm.count({
+                    where
+                })
+            ])
+
+            const allCallbackDetails = {
+                allCallbacks,
+                totalCount,
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit) || 1,
+                perPage: limit
+
+            }
+
+            return { message: 'Showing all the users', allCallbackDetails }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    //Fetch all user data fro export
+    async fetchAllUsersForExport() {
+        try {
+            const allUsers = await this.prisma.user.findMany({
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            })
+            return { message: 'Showing all the user data', allUsers }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+
 
 
 }

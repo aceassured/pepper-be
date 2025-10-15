@@ -145,7 +145,20 @@ export class AdminController {
         return this.adminService.fetchAllEnumValue()
     }
 
-    // --- Refund Endpoint ---
+
+    // Fetch all dashboard card data
+    @Get('refund-dashboard-cards')
+    async refundDashboardCards(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+        return this.adminService.fetchRefundDashboardCards(fromDate, toDate)
+    }
+
+    // Fetch all the refund transcation details
+    @Get('get-all-refunds/:page')
+    async getAllRefunds(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('status') status: string, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+        return this.adminService.fetchAllRefundRequests(page, search, status, fromDate, toDate)
+    }
+
+    // Apporve Refund Endpoint
     @Post(':orderId/refund')
     async refundOrder(
         @Param('orderId', ParseIntPipe) orderId: number,
@@ -153,6 +166,37 @@ export class AdminController {
         return this.adminService.refundOrder(orderId)
     }
 
-    // ==== End of payment managment ====
+    // Cancel order refund
+    @Put('cancel-refund/:orderId')
+    async cancelRefundRequest(@Param('orderId', ParseIntPipe) orderId: number) {
+        return this.adminService.cancelRefundOrder(orderId)
+    }
+
+    //Fetch all users for export user data
+    @Get('export-all-refund-orders')
+    async fetchAllRefundOrdersForExport() {
+        return this.adminService.exportRefundData()
+    }
+
+    // ==== End of refund managment ====
+
+    // ==== callback module ====
+    // Fetch all the users
+    @Get('fetch-all-users/:page')
+    async fetchAllUser(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+        return this.adminService.fetchAllUsers(page, search, fromDate, toDate)
+    }
+
+    // Fetch all the user callbacks
+    @Get('fetch-all-callbacks/:page')
+    async fetchAllUserCallbacks(@Param('page', ParseIntPipe) page: number, @Query('search') search: string, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+        return this.adminService.fetchAllCallbacks(page, search, fromDate, toDate)
+    }
+
+    //Fetch all users for export user data
+    @Get('export-all-users')
+    async fetchAllUserForExport() {
+        return this.adminService.fetchAllUsersForExport()
+    }
 
 }
