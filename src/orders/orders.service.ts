@@ -279,24 +279,21 @@ export class OrdersService {
 
     // Update the refund status based on the webhook
     async handleWebhookEvent(event: string, refund: any) {
+        // Only handle Razorpay refund events
         const statusMap: Record<string, RefundStatus> = {
-            'refund.created': RefundStatus.INITIATED,
-            'refund.processed': RefundStatus.PROCESSING,
-            'refund.failed': RefundStatus.FAILED,
-            'refund.completed': RefundStatus.SUCCESS,
+            'refund.processed': RefundStatus.SUCCESS, // Refund succeeded
+            'refund.failed': RefundStatus.FAILED,     // Refund failed
         };
 
         const mappedStatus = statusMap[event];
-        if (!mappedStatus) return;
+        if (!mappedStatus) return; // Ignore other events
 
         await this.prisma.refund.updateMany({
             where: { refundId: refund.id },
             data: {
                 status: mappedStatus,
-                processedAt:
-                    mappedStatus === RefundStatus.PROCESSING ? new Date() : undefined,
-                completedAt:
-                    mappedStatus === RefundStatus.SUCCESS ? new Date() : undefined,
+                processedAt: mappedStatus === RefundStatus.SUCCESS ? new Date() : undefined,
+                failedAt: mappedStatus === RefundStatus.FAILED ? new Date() : undefined,
                 failureReason:
                     mappedStatus === RefundStatus.FAILED
                         ? refund.failure_reason || 'Unknown'
@@ -305,6 +302,7 @@ export class OrdersService {
             },
         });
     }
+
 
 
 }

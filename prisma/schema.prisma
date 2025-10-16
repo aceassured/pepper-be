@@ -236,8 +236,7 @@ model Location {
 // Modal for handling refund
 
 enum RefundStatus {
-  INITIATED
-  PROCESSING
+  PENDING
   SUCCESS
   FAILED
   CANCELLED
@@ -251,10 +250,10 @@ model Refund {
   refundId      String?      @unique // Refund ID from Razorpay or other provider
   amountInPaise Int
   reason        String?
-  status        RefundStatus @default(INITIATED)
+  status        RefundStatus @default(PENDING)
   initiatedAt   DateTime     @default(now())
   processedAt   DateTime?
-  completedAt   DateTime?
+  failedAt      DateTime?
   failureReason String?
   metadata      Json?
 

@@ -221,4 +221,21 @@ export class AdminController {
         return this.adminService.toggleSetting(field);
     }
 
+    @Get('daily-summary')
+    async geDailySummary() {
+        return this.adminService.fetchDailySummary()
+    }
+
+    @Get('weekly-summary')
+    async getWeeklySummary() {
+        return this.adminService.fetchWeeklySummary()
+    }
+
+    @Get('monthly-summary')
+    async getMonthlySummary() {
+        return this.adminService.fetchMonthlySummary()
+    }
+
+     // ==== End of notification module ====
+
 }

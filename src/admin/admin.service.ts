@@ -11,6 +11,7 @@ import { OrderRefundStatus, OrderStatus, PaymentMethod, PaymentStatus, RefundSta
 import Razorpay from 'razorpay';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
 import { contains } from 'class-validator';
+import { error } from 'console';
 
 
 @Injectable()
@@ -1023,7 +1024,7 @@ export class AdminService {
                     this.prisma.order.count({
                         where: {
                             status: 'REFUNDED',
-                            refund: null,
+                            refundStatus: 'PENDING',
                             ...(dateFilter.gte && {
                                 refundRequestDate: dateFilter,
                             }),
@@ -1033,20 +1034,22 @@ export class AdminService {
                     // 3️⃣ Approved / Processing / Success refunds (Refund exists with specific status)
                     this.prisma.order.count({
                         where: {
-                            refund: {
-                                is: {
-                                    status: { in: ['INITIATED', 'PROCESSING', 'SUCCESS'] },
-                                    ...(dateFilter.gte && { createdAt: dateFilter }),
-                                },
-                            },
+                            status: 'REFUNDED',
+                            refundStatus: 'APPROVED',
+                            ...(dateFilter.gte && {
+                                refundRequestDate: dateFilter,
+                            }),
                         },
                     }),
 
                     // 4️⃣ Cancelled refunds
                     this.prisma.order.count({
                         where: {
+                            status: 'REFUNDED',
                             refundStatus: 'CANCELLED',
-                            ...(dateFilter.gte && { createdAt: dateFilter }),
+                            ...(dateFilter.gte && {
+                                refundRequestDate: dateFilter,
+                            }),
                         },
                     })
                 ]);
@@ -1213,7 +1216,7 @@ export class AdminService {
                     orderId: order.id,
                     refundId: refund.id,
                     amountInPaise: refund.amount,
-                    status: 'PROCESSING',
+                    status: 'PENDING',
                     metadata: refund,
                 },
             });
@@ -1429,6 +1432,7 @@ export class AdminService {
 
     // ==== Start of notification module ====
 
+    // Toogle notification setting
     async toggleSetting(field: string) {
         try {
             const validFields = [
@@ -1459,6 +1463,175 @@ export class AdminService {
             catchBlock(error)
         }
     }
+
+    // Fetch daily summary
+    async fetchDailySummary() {
+        try {
+            const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+
+            const startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+
+            const [totalVisitors, totalOrders, paidOrders, pendingOrders] = await Promise.all([
+                this.prisma.user.count({
+                    where: {
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                }),
+                this.prisma.order.count({
+                    where: {
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PAID',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PENDING',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+            ]);
+
+            const totalRevenue = paidOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
+            const totalPendingRevenue = pendingOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
+
+            const dashboardData = {
+                totalVisitors,
+                totalOrders,
+                totalRevenue,
+                totalPendingRevenue,
+                startDate,
+                endDate
+            };
+
+            return { message: 'Showing the weekly summary', dashboardData };
+        } catch (error) {
+            console.error('Error fetching weekly summary:', error);
+            throw error;
+        }
+    }
+
+    // Fetch weekly summary
+    async fetchWeeklySummary() {
+        try {
+            const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
+
+            const [totalVisitors, totalOrders, paidOrders, pendingOrders] = await Promise.all([
+                this.prisma.user.count({
+                    where: {
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                }),
+                this.prisma.order.count({
+                    where: {
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PAID',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PENDING',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+            ]);
+
+            const totalRevenue = paidOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
+            const totalPendingRevenue = pendingOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
+
+            const dashboardData = {
+                totalVisitors,
+                totalOrders,
+                totalRevenue,
+                totalPendingRevenue,
+                startDate,
+                endDate
+            };
+
+            return { message: 'Showing the weekly summary', dashboardData };
+        } catch (error) {
+            console.error('Error fetching weekly summary:', error);
+            throw error;
+        }
+    }
+
+    // Fetch monthly summary
+    async fetchMonthlySummary() {
+        try {
+            const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+
+            const startDate = new Date();
+            startDate.setMonth(endDate.getMonth() - 1); // go back 1 month
+            startDate.setHours(0, 0, 0, 0);
+
+            const [totalVisitors, totalOrders, paidOrders, pendingOrders] = await Promise.all([
+                this.prisma.user.count({
+                    where: {
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                }),
+                this.prisma.order.count({
+                    where: {
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PAID',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+                this.prisma.order.findMany({
+                    where: {
+                        status: 'PENDING',
+                        createdAt: { gte: startDate, lte: endDate },
+                    },
+                    select: { totalAmountInPaise: true },
+                }),
+            ]);
+
+            const totalRevenue = paidOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
+            const totalPendingRevenue = pendingOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
+
+            const dashboardData = {
+                totalVisitors,
+                totalOrders,
+                totalRevenue,
+                totalPendingRevenue,
+                startDate,
+                endDate,
+            };
+
+            return { message: 'Showing the monthly summary', dashboardData };
+        } catch (error) {
+            console.error('Error fetching monthly summary:', error);
+            throw error;
+        }
+    }
+
+    // ==== End of notification module ====
 
 
 }

@@ -67,7 +67,6 @@ export class OrdersController {
     // --- 2️⃣ Handle Refund Events ---
     if (event.startsWith('refund.')) {
       const refundEntity = payload.refund?.entity;
-
       if (refundEntity) {
         await this.ordersService.handleWebhookEvent(event, refundEntity);
       }
