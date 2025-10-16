@@ -1,11 +1,14 @@
 // src/orders/orders.service.ts
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; // your Prisma service
 import { CreateOrderDto } from './dto/create-order.dto';
 import Razorpay from 'razorpay';
 import { catchBlock } from '../common/CatchBlock';
 import { RefundStatus } from '@prisma/client';
 import { sendAdminNewOrderEmail, sendCustomerOrderConfirmation } from '../common/sendOrderEmails';
+import { put } from '@vercel/blob';
+import { createHash, randomUUID } from 'crypto';
+import { RefundRequestDto } from './dto/refund-request.dto';
 
 @Injectable()
 export class OrdersService {
@@ -255,25 +258,116 @@ export class OrdersService {
         }
     }
 
+    // // Request the refund for a specific order
+    // async refundRequest(id: number) {
+    //     try {
+    //         const order = await this.prisma.order.findUnique({ where: { id } }) || (() => { throw new BadRequestException("No order found with the id") })()
+
+    //         const updatedOrder = await this.prisma.order.update({
+    //             where: { id },
+    //             data: {
+    //                 status: 'REFUNDED',
+    //                 refundRequestDate: new Date(),
+    //                 refundStatus: 'PENDING'
+    //             },
+    //             include: { payment: true, progressTracker: true, refund: true }
+    //         })
+
+    //         return { message: "Refund request raised successfully!", order: updatedOrder }
+
+    //     } catch (error) {
+    //         catchBlock(error)
+    //     }
+    // }
+
+
     // Request the refund for a specific order
-    async refundRequest(id: number) {
+    async refundRequest(
+        id: number,
+        dto: RefundRequestDto,
+        files: Express.Multer.File[],
+    ) {
         try {
-            const order = await this.prisma.order.findUnique({ where: { id } }) || (() => { throw new BadRequestException("No order found with the id") })()
+            const order = await this.prisma.order.findUnique({ where: { id } });
+            if (!order) throw new BadRequestException('No order found with the id');
+
+            const existingMeta =
+                order.metadata && typeof order.metadata === 'object'
+                    ? order.metadata
+                    : {};
+
+            // If existing refund metadata exists, we’ll re-use uploaded hashes/URLs
+            const existingRefundMeta =
+                (existingMeta.refundRequest && existingMeta.refundRequest.images) || [];
+
+            // For duplicate checking, create a quick lookup of hash->url
+            const existingHashMap = new Map<string, string>();
+            for (const img of existingRefundMeta) {
+                if (img.hash && img.url) existingHashMap.set(img.hash, img.url);
+            }
+
+            const uploadedImages: { url: string; hash: string }[] = [];
+
+            for (const file of files || []) {
+                const fileBuffer = file.buffer;
+                const hash = createHash('md5').update(fileBuffer).digest('hex');
+
+                // Check if this hash already uploaded
+                if (existingHashMap.has(hash)) {
+                    uploadedImages.push({
+                        url: existingHashMap.get(hash)!,
+                        hash,
+                    });
+                    continue; // skip re-upload
+                }
+
+                try {
+                    const ext =
+                        (file.originalname && file.originalname.split('.').pop()) || 'bin';
+                    const filename = `refunds/${id}/${Date.now()}-${randomUUID()}.${ext}`;
+
+                    const blob = await put(filename, fileBuffer, {
+                        access: 'public',
+                    });
+
+                    // Only .url is valid
+                    const url = blob.url;
+                    uploadedImages.push({ url, hash });
+                } catch (err) {
+                    console.error('Failed uploading file to Vercel Blob:', err);
+                    throw new InternalServerErrorException('Failed to upload image');
+                }
+            }
+
+            const refundMeta = {
+                refundRequest: {
+                    reason: dto.reason,
+                    images: uploadedImages,
+                    requestedAt: new Date().toISOString(),
+                },
+            };
+
+            const newMetadata = { ...existingMeta, ...refundMeta };
 
             const updatedOrder = await this.prisma.order.update({
                 where: { id },
                 data: {
                     status: 'REFUNDED',
                     refundRequestDate: new Date(),
-                    refundStatus: 'PENDING'
+                    refundStatus: 'PENDING',
+                    metadata: newMetadata,
                 },
-                include: { payment: true, progressTracker: true, refund: true }
-            })
+                include: { payment: true, progressTracker: true, refund: true },
+            });
 
-            return { message: "Refund request raised successfully!", order: updatedOrder }
-
+            return {
+                message: 'Refund request raised successfully!',
+                order: updatedOrder,
+            };
         } catch (error) {
-            catchBlock(error)
+            console.error(error);
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException('Failed to raise refund request');
         }
     }
 

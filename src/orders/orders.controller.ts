@@ -1,8 +1,10 @@
 // src/orders/orders.controller.ts
-import { Controller, Post, Body, Get, Param, Req, Res, HttpStatus, ParseIntPipe, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, Res, HttpStatus, ParseIntPipe, Put, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import * as crypto from 'crypto';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { RefundRequestDto } from './dto/refund-request.dto';
 
 
 @Controller('orders')
@@ -76,9 +78,22 @@ export class OrdersController {
   }
 
   @Put('refund-request/:id')
-  async raiseRefundRequest(@Param('id', ParseIntPipe) id: number) {
-    return this.ordersService.refundRequest(id)
-  }
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file - adjust as needed
+      // You can add fileFilter to restrict MIME types (image/png, image/jpeg etc)
+    }),
+  )
+  async raiseRefundRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: RefundRequestDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    // if (!body || !body.reason) {
+    //   throw new BadRequestException('Refund reason is required');
+    // }
 
+    return this.ordersService.refundRequest(id, body, files || []);
+  }
 
 }

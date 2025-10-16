@@ -797,7 +797,7 @@ export class AdminService {
                 },
             });
 
-            return { message: 'New bulk order created successfully!', order: newOrder }
+            return { message: 'New bulk order created successfully!', order: await this.prisma.order.findUnique({ where: { id: newOrder.id }, include: { progressTracker: true } }) }
 
         } catch (error) {
             catchBlock(error)
@@ -1159,7 +1159,7 @@ export class AdminService {
                     where,
                     skip,
                     take: limit,
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { refundRequestDate: 'desc' },
                     include: {
                         refund: true, // include refund info for clarity
                     },
@@ -1258,7 +1258,7 @@ export class AdminService {
         try {
             const allOrders = await this.prisma.order.findMany({
                 orderBy: {
-                    createdAt: 'desc'
+                    refundRequestDate: 'desc'
                 },
                 include: { refund: true }
             })
