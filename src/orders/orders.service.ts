@@ -5,6 +5,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import Razorpay from 'razorpay';
 import { catchBlock } from '../common/CatchBlock';
 import { RefundStatus } from '@prisma/client';
+import { sendAdminNewOrderEmail, sendCustomerOrderConfirmation } from '../common/sendOrderEmails';
 
 @Injectable()
 export class OrdersService {
@@ -126,6 +127,8 @@ export class OrdersService {
                 },
             });
 
+            // console.log('New Order', await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } }));
+
             return {
                 order,
                 razorpayKeyId: process.env.RAZORPAY_KEY_ID,
@@ -185,6 +188,12 @@ export class OrdersService {
                 },
                 include: { payment: true },
             });
+
+            sendCustomerOrderConfirmation(await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } }))
+            const settings = await this.prisma.settings.findFirst();
+            if (settings?.newBookings) {
+                sendAdminNewOrderEmail(await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } }))
+            }
 
             return updatedOrder;
         } catch (error) {

@@ -100,12 +100,12 @@ model Order {
   state           String
   district        String
   pincode         String
-  areaName        String  
+  areaName        String
   isBulkUpload    Boolean @default(false)
 
   paymentMethod     PaymentMethod?
-  termsAccepted     Boolean        @default(false)
-  status            OrderStatus    @default(PENDING)
+  termsAccepted     Boolean            @default(false)
+  status            OrderStatus        @default(PENDING)
   refundRequestDate DateTime?
   refundStatus      OrderRefundStatus?
   metadata          Json?
@@ -271,4 +271,24 @@ model CallBack {
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Storing user preffered notification settings 
+enum ValidSettings {
+  newBookings
+  paymentConfirmations
+  dailySummary
+  weeklySummary
+  monthlySummary
+}
+
+model Settings {
+  id                   Int      @id @default(autoincrement())
+  newBookings          Boolean  @default(false)
+  paymentConfirmations Boolean  @default(false)
+  dailySummary         Boolean  @default(false)
+  weeklySummary        Boolean  @default(false)
+  monthlySummary       Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }

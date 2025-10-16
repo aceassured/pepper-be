@@ -199,4 +199,26 @@ export class AdminController {
         return this.adminService.fetchAllUsersForExport()
     }
 
+    // Delete a specific user
+    @Delete('delete-user/:id')
+    async deleteUser(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.deleteUser(id)
+    }
+
+    // Delete a specific callback
+    @Delete('delete-callback/:id')
+    async deleteCallback(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.deleteCallback(id)
+    }
+
+    // ====End of callback module ====
+
+    // ==== Start of notification module ====
+
+    // Toggle notification settings
+    @Put('/settings/toggle')
+    async toggleSetting(@Body('field') field: string) {
+        return this.adminService.toggleSetting(field);
+    }
+
 }

@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto';
 import { sendOtpToUser } from '../common/send-otp';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { OrderRefundStatus, OrderStatus, PaymentMethod, PaymentStatus, StageStatus, StageType } from '@prisma/client';
+import { OrderRefundStatus, OrderStatus, PaymentMethod, PaymentStatus, RefundStatus, StageStatus, StageType, ValidSettings } from '@prisma/client';
 import Razorpay from 'razorpay';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
 import { contains } from 'class-validator';
@@ -767,7 +767,7 @@ export class AdminService {
             const newOrder = await this.prisma.order.create({
                 data: {
                     ...dto,
-                    orderId:newOrderId,
+                    orderId: newOrderId,
                     status: 'PAID',
                     totalAmountInPaise: totalAmountInPaise,
                     isBulkUpload: true
@@ -944,23 +944,28 @@ export class AdminService {
         }
     }
 
-    // Fetch all the enum values
+    // Fetch all enum values
     async fetchAllEnumValue() {
         try {
             const paymentMethods = Object.values(PaymentMethod)
             const orderPaymentStatus = Object.values(OrderStatus)
             const paymentOrderStatus = Object.values(PaymentStatus)
+            const orderRefundTrackingStatus = Object.values(OrderRefundStatus)
             const stageTypes = Object.values(StageType)
             const stateStatus = Object.values(StageStatus)
-            const orderRefundStatus = Object.values(OrderRefundStatus)
-            
+            const refundStatus = Object.values(RefundStatus)
+            const validSettings = Object.values(ValidSettings)
+
 
             const enumValues = {
                 paymentMethods,
                 orderPaymentStatus,
                 paymentOrderStatus,
+                orderRefundTrackingStatus,
                 stageTypes,
-                stateStatus
+                stateStatus,
+                refundStatus,
+                validSettings
             }
 
             return { message: "Showing all the list of enum values", enumValues }
@@ -983,6 +988,7 @@ export class AdminService {
     }
 
     //==== refund management ====
+
     // Fetch cards data for refund dashboard
     async fetchRefundDashboardCards(fromDate?: string, toDate?: string) {
         try {
@@ -1077,7 +1083,6 @@ export class AdminService {
             catchBlock(error);
         }
     }
-
 
     // Fetch all the refund transcation details
     async fetchAllRefundRequests(
@@ -1194,7 +1199,7 @@ export class AdminService {
                 notes: { reason: 'Full refund requested' },
             });
 
-            const updatedOrder = await this.prisma.order.update({
+            await this.prisma.order.update({
                 where: { id: orderId },
                 data: {
                     refundStatus: 'APPROVED'
@@ -1203,7 +1208,7 @@ export class AdminService {
             })
 
 
-            const refundRecord = await this.prisma.refund.create({
+            await this.prisma.refund.create({
                 data: {
                     orderId: order.id,
                     refundId: refund.id,
@@ -1213,7 +1218,9 @@ export class AdminService {
                 },
             });
 
-            return { message: 'Refund accepted successfully!', refundRecord, order: updatedOrder };
+            return {
+                message: 'Refund accepted successfully!', order: await this.prisma.order.findUnique({ where: { id: orderId }, include: { refund: true } })
+            };
         } catch (error) {
             console.error('Razorpay refund error:', error);
             throw new BadRequestException(`Refund failed: ${error.description || error.message}`);
@@ -1223,7 +1230,7 @@ export class AdminService {
     // Cancel Refund order
     async cancelRefundOrder(orderId: number) {
         try {
-            const order = await this.prisma.order.findUnique({
+            await this.prisma.order.findUnique({
                 where: { id: orderId },
                 include: { payment: true, refund: true },
             }) || (() => { throw new BadRequestException('No order found with the id') })()
@@ -1260,7 +1267,7 @@ export class AdminService {
 
     //==== End of refund management ====
 
-    // ==== callback module ====
+    // ==== Start of callback module ====
     //Fetch all users
     async fetchAllUsers(page: number, search?: string, fromDate?: string, toDate?: string) {
         try {
@@ -1396,7 +1403,62 @@ export class AdminService {
         }
     }
 
+    // Delete a specific callback
+    async deleteCallback(id: number) {
+        try {
+            await this.prisma.contactForm.findFirst({ where: { id } }) || (() => { throw new BadRequestException('No callback with the id') })()
+            await this.prisma.contactForm.delete({ where: { id } })
+            return { message: 'Callback deleted successfully' }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
 
+    // Delete a specific user
+    async deleteUser(id: number) {
+        try {
+            await this.prisma.user.findFirst({ where: { id } }) || (() => { throw new BadRequestException('No user with the id') })()
+            await this.prisma.user.delete({ where: { id } })
+            return { message: 'User deleted successfully' }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    // ====End of callback module ====
+
+    // ==== Start of notification module ====
+
+    async toggleSetting(field: string) {
+        try {
+            const validFields = [
+                'newBookings',
+                'paymentConfirmations',
+                'dailySummary',
+                'weeklySummary',
+                'monthlySummary',
+            ];
+
+            if (!validFields.includes(field)) {
+                throw new BadRequestException('Invalid field name');
+            }
+
+            // Fetch current settings (assuming single global record)
+            const settings = await this.prisma.settings.findFirst();
+            if (!settings) throw new BadRequestException('Settings record not found');
+
+            const currentValue = settings[field];
+            const updated = await this.prisma.settings.update({
+                where: { id: settings.id },
+                data: { [field]: !currentValue },
+            });
+
+            return { message: `Setting ${field} updated successfully`, updated };
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
 
 
 }
