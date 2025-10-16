@@ -127,7 +127,12 @@ export class OrdersService {
                 },
             });
 
+
             // console.log('New Order', await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } }));
+            const settings = await this.prisma.settings.findFirst();
+            if (settings?.newBookings) {
+                sendAdminNewOrderEmail(await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } }))
+            }
 
             return {
                 order,
@@ -191,7 +196,7 @@ export class OrdersService {
 
             sendCustomerOrderConfirmation(await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } }))
             const settings = await this.prisma.settings.findFirst();
-            if (settings?.newBookings) {
+            if (settings?.paymentConfirmations) {
                 sendAdminNewOrderEmail(await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } }))
             }
 
