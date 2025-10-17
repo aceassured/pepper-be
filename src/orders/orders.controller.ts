@@ -96,4 +96,10 @@ export class OrdersController {
     return this.ordersService.refundRequest(id, body, files || []);
   }
 
+  // Recent booking for dahsboard
+  @Get()
+  getAllOrders() {
+    return this.ordersService.getAllOrders();
+  }
+
 }

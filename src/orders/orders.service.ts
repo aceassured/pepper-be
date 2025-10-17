@@ -396,7 +396,29 @@ export class OrdersService {
             },
         });
     }
+    // all orders
+    async getAllOrders() {
+        try {
+            const orders = await this.prisma.order.findMany({
+                where: {
+                    status: "PAID",
+                },
+                include: {
+                    user: true,
+                    payment: true,
+                    progressTracker: true,
+                    refund: true,
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            });
 
+            return orders;
+        } catch (error) {
+            catchBlock(error);
+        }
+    }
 
 
 }
