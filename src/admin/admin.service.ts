@@ -1539,7 +1539,7 @@ export class AdminService {
             if (!settings) throw new BadRequestException('Settings record not found');
 
             if (settings.dailySummary) {
-                await sendSummaryReport(summaryResponse);
+                sendSummaryReport(summaryResponse);
             }
 
 
@@ -1609,7 +1609,7 @@ export class AdminService {
             if (!settings) throw new BadRequestException('Settings record not found');
 
             if (settings.weeklySummary) {
-                await sendSummaryReport(summaryResponse);
+                sendSummaryReport(summaryResponse);
             }
 
 
@@ -1679,7 +1679,7 @@ export class AdminService {
             if (!settings) throw new BadRequestException('Settings record not found');
 
             if (settings.monthlySummary) {
-                await sendSummaryReport(summaryResponse);
+                sendSummaryReport(summaryResponse);
             }
 
 

@@ -133,9 +133,10 @@ export class OrdersService {
 
 
             // console.log('New Order', await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } }));
+            const updatedOrder = await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } })
             const settings = await this.prisma.settings.findFirst();
             if (settings?.newBookings) {
-                sendAdminNewOrderEmail(await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } }))
+                sendAdminNewOrderEmail(updatedOrder)
             }
 
             return {
@@ -183,7 +184,7 @@ export class OrdersService {
             }
 
             // update payment and order status
-            const updatedOrder = await this.prisma.order.update({
+            await this.prisma.order.update({
                 where: { id: orderId },
                 data: {
                     status: 'PAID',
@@ -198,10 +199,12 @@ export class OrdersService {
                 include: { payment: true },
             });
 
+            const updatedOrder = await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } })
+
             sendCustomerOrderConfirmation(await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } }))
             const settings = await this.prisma.settings.findFirst();
             if (settings?.paymentConfirmations) {
-                sendAdminNewOrderEmail(await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, progressTracker: true } }))
+                sendAdminNewOrderEmail(updatedOrder)
             }
 
             return updatedOrder;
@@ -373,7 +376,7 @@ export class OrdersService {
             if (!settings) throw new BadRequestException('Settings record not found');
 
             if (settings.refundRequests) {
-                await sendRefundRequestEmail(updatedOrder)
+                sendRefundRequestEmail(updatedOrder)
             }
 
             return {
