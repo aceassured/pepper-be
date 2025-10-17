@@ -1,22 +1,14 @@
-import * as nodemailer from 'nodemailer'
+import { Resend } from "resend";
 
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-})
-
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendOtpToUser = (email: string, otp: string) => {
-    // 
-    const options = {
-        from: 'no-reply@gmail.com',
-        to: email,
-        subject: 'OTP for Password Recovery',
-        html: `
+  // 
+  const options = {
+    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    to: email,
+    subject: 'OTP for Password Recovery',
+    html: `
           <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9;">
             <h2 style="color: #333;">Password Recovery OTP</h2>
             <p style="font-size: 14px; color: #555;">
@@ -35,6 +27,7 @@ export const sendOtpToUser = (email: string, otp: string) => {
             </p>
           </div>
         `,
-    };
-    transporter.sendMail(options)
+  };
+
+  return resend.emails.send(options);
 }

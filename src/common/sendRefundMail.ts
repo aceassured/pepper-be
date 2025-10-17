@@ -1,12 +1,7 @@
-import nodemailer from "nodemailer";
+// sendSummaryReport.js
+import { Resend } from "resend";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER, // venkatatrinadh4444@gmail.com
-    pass: process.env.EMAIL_PASS, // rtecerbfluiivezr
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendRefundRequestEmail = async (refundRequest) => {
   const {
@@ -30,8 +25,8 @@ export const sendRefundRequestEmail = async (refundRequest) => {
   } = refundRequest;
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.ADMIN_EMAIL, // venkatatrinadh@aceassured.com
+    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    to: process.env.ADMIN_EMAIL || "venkatatrinadh@aceassured.com", // venkatatrinadh@aceassured.com
     subject: `Refund Request Raised - Order ${orderId}`,
     html: `
   <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6; background-color:#f9fafb;">
@@ -74,7 +69,7 @@ export const sendRefundRequestEmail = async (refundRequest) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send(mailOptions);
   } catch (error) {
     console.error("Error sending refund request email:", error);
   }

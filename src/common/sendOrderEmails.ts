@@ -1,18 +1,12 @@
-import * as nodemailer from 'nodemailer';
+import { Resend } from "resend";
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 🌿 Send email to admin when a new order is placed
 export const sendAdminNewOrderEmail = async (order: any) => {
   const options = {
-    from: `"Kumbukkal Pepper Nursery" <${process.env.EMAIL_USER}>`,
-    to: process.env.ADMIN_EMAIL,
+    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    to: process.env.ADMIN_EMAIL || "venkatatrinadh@aceassured.com",
     subject: `🛒 New Order Received - ${order.orderId}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
@@ -40,13 +34,13 @@ export const sendAdminNewOrderEmail = async (order: any) => {
     `,
   };
 
-  await transporter.sendMail(options);
+  await resend.emails.send(options);
 };
 
 // 🌿 Send confirmation email to the customer
 export const sendCustomerOrderConfirmation = async (order: any) => {
   const options = {
-    from: `"Kumbukkal Pepper Nursery" <${process.env.EMAIL_USER}>`,
+    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
     to: order.email,
     subject: `🌱 Thank You for Your Order - ${order.orderId}`,
     html: `
@@ -85,5 +79,5 @@ export const sendCustomerOrderConfirmation = async (order: any) => {
     `,
   };
 
-  await transporter.sendMail(options);
+  await resend.emails.send(options);
 };

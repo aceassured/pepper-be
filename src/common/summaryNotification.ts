@@ -1,50 +1,46 @@
-import * as nodemailer from 'nodemailer';
+// sendSummaryReport.js
+import { Resend } from "resend";
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 const formatPaiseToINR = (paise: number) => {
-    const rupees = typeof paise === 'number' ? paise / 100 : 0;
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 2,
-        minimumFractionDigits: 2,
-    }).format(rupees);
+  const rupees = typeof paise === 'number' ? paise / 100 : 0;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(rupees);
 };
 
 const formatDateReadable = (dateInput: string | Date) => {
-    const d = new Date(dateInput);
-    return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+  const d = new Date(dateInput);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 };
 
 export const sendSummaryReport = async (summaryResponse: any) => {
-    try {
-        if (!summaryResponse || !summaryResponse.dashboardData) {
-            throw new Error('Invalid summary payload');
-        }
+  try {
+    if (!summaryResponse || !summaryResponse.dashboardData) {
+      throw new Error('Invalid summary payload');
+    }
 
-        const data = summaryResponse.dashboardData;
+    const data = summaryResponse.dashboardData;
 
-        const start = new Date(data.startDate);
-        const end = new Date(data.endDate);
-        const period = `${formatDateReadable(start)} – ${formatDateReadable(end)}`;
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    const period = `${formatDateReadable(start)} – ${formatDateReadable(end)}`;
 
-        const formattedRevenue = formatPaiseToINR(data.totalRevenue);
-        const formattedPending = formatPaiseToINR(data.totalPendingRevenue);
+    const formattedRevenue = formatPaiseToINR(data.totalRevenue);
+    const formattedPending = formatPaiseToINR(data.totalPendingRevenue);
 
-        const subject = `Kumbukkal Pepper Nursery - ${data.value} Summary Report (${period})`;
+    const subject = `Kumbukkal Pepper Nursery - ${data.value} Summary Report (${period})`;
 
-        const html = `
+    const html = `
       <div style="font-family: Arial, Helvetica, sans-serif; max-width: 760px; margin: 0 auto; border: 1px solid #e6e9ee; border-radius: 8px; overflow: hidden; background: #fff;">
 
         <!-- Header -->
@@ -68,13 +64,13 @@ export const sendSummaryReport = async (summaryResponse: any) => {
 
           <!-- Summary Cards (Stacked tables so they show 1 per row) -->
           ${[
-                { label: 'Visitors', value: data.totalVisitors, bg: '#fbfdff', color: '#0f172a' },
-                { label: 'Orders', value: data.totalOrders, bg: '#fbfdff', color: '#0f172a' },
-                { label: 'Total Revenue', value: formattedRevenue, bg: '#fff8f0', color: '#92400e' },
-                { label: 'Pending Revenue', value: formattedPending, bg: '#fff8f0', color: '#92400e' },
-            ]
-                .map(
-                    (item) => `
+        { label: 'Visitors', value: data.totalVisitors, bg: '#fbfdff', color: '#0f172a' },
+        { label: 'Orders', value: data.totalOrders, bg: '#fbfdff', color: '#0f172a' },
+        { label: 'Total Revenue', value: formattedRevenue, bg: '#fff8f0', color: '#92400e' },
+        { label: 'Pending Revenue', value: formattedPending, bg: '#fff8f0', color: '#92400e' },
+      ]
+        .map(
+          (item) => `
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
                 <tr>
                   <td style="background:${item.bg}; border:1px solid #eef2f7; border-radius:10px; padding:14px; text-align:center;">
@@ -84,8 +80,8 @@ export const sendSummaryReport = async (summaryResponse: any) => {
                 </tr>
               </table>
             `
-                )
-                .join('')}
+        )
+        .join('')}
 
           <!-- Summary Table -->
           <div style="margin-top:16px; border-top:1px dashed #e6edf5; padding-top:16px;">
@@ -125,17 +121,17 @@ export const sendSummaryReport = async (summaryResponse: any) => {
       </div>
     `;
 
-        const mailOptions = {
-            from: `"Kumbukkal Pepper Nursery" <${process.env.EMAIL_USER}>`,
-            to: process.env.ADMIN_EMAIL,
-            subject,
-            html,
-        };
+    const mailOptions = {
+      from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+      to: process.env.ADMIN_EMAIL || 'venkatatrinadh@aceassured.com',
+      subject,
+      html,
+    };
 
-        const info = await transporter.sendMail(mailOptions);
-        return { success: true, info };
-    } catch (err) {
-        console.error('Failed to send summary report email:', err);
-        return { success: false, error: err?.message || err };
-    }
+    const info = await resend.emails.send(mailOptions);
+    return { success: true, info };
+  } catch (err) {
+    console.error('Failed to send summary report email:', err);
+    return { success: false, error: err?.message || err };
+  }
 };

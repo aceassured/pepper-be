@@ -1,23 +1,17 @@
-import * as nodemailer from 'nodemailer';
-import { ContactDto } from '../user/dto/contact.dto';
+import { Resend } from "resend";
+import { ContactDto } from "../user/dto/contact.dto";
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendContactMail = async (contact: ContactDto) => {
-    const { name, email, phone, message } = contact;
+  const { name, email, phone, message } = contact;
 
-    // Admin Email
-    const adminOptions = {
-        from: process.env.EMAIL_USER,
-        to: process.env.ADMIN_EMAIL,
-        subject: 'New Contact Form Submission',
-        html: `
+  // Admin Email
+  const adminOptions = {
+    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    to: process.env.ADMIN_EMAIL || "venkatatrinadh@aceassured.com",
+    subject: 'New Contact Form Submission',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px; border: 1px solid #e0e0e0; color: #1F2937;">
         <div style="text-align: center; margin-bottom: 20px;">
           <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkai Pepper" style="height: 60px;">
@@ -33,14 +27,14 @@ export const sendContactMail = async (contact: ContactDto) => {
         </p>
       </div>
     `,
-    };
+  };
 
-    // User Thank You Email
-    const userOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'Thank You for Contacting Kumbukkai Pepper',
-        html: `
+  // User Thank You Email
+  const userOptions = {
+    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    to: email,
+    subject: 'Thank You for Contacting Kumbukkai Pepper',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px; border: 1px solid #e0e0e0; color: #1F2937;">
         <div style="text-align: center; margin-bottom: 20px;">
           <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkai Pepper" style="height: 60px;">
@@ -54,8 +48,8 @@ export const sendContactMail = async (contact: ContactDto) => {
         </p>
       </div>
     `,
-    };
+  };
 
-    await transporter.sendMail(adminOptions);
-    await transporter.sendMail(userOptions);
+  await resend.emails.send(adminOptions);
+  await resend.emails.send(userOptions);
 };
