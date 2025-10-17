@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
 
@@ -18,4 +18,15 @@ export class UpdateProfileDto {
         },
     )
     password: string;
+
+    @IsOptional()
+    @IsNotEmpty({ message: 'Password is required' })
+    @Matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        {
+            message:
+                'Password must be at least 8 characters long, include one uppercase, one lowercase, one number, and one special character',
+        },
+    )
+    currentPassword?: string;
 }

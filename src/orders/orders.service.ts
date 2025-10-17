@@ -9,6 +9,7 @@ import { sendAdminNewOrderEmail, sendCustomerOrderConfirmation } from '../common
 import { put } from '@vercel/blob';
 import { createHash, randomUUID } from 'crypto';
 import { RefundRequestDto } from './dto/refund-request.dto';
+import { sendRefundRequestEmail } from '../common/sendRefundMail';
 
 @Injectable()
 export class OrdersService {
@@ -339,17 +340,20 @@ export class OrdersService {
                 }
             }
 
+            const oldRefundRequest = existingMeta.refundRequest || {};
+
             const refundMeta = {
                 refundRequest: {
-                    reason: dto.reason,
-                    images: uploadedImages,
+                    reason: dto.reason ?? oldRefundRequest.reason,
+                    images: uploadedImages.length > 0 ? uploadedImages : oldRefundRequest.images || [],
                     requestedAt: new Date().toISOString(),
                 },
             };
 
             const newMetadata = { ...existingMeta, ...refundMeta };
 
-            const updatedOrder = await this.prisma.order.update({
+
+            await this.prisma.order.update({
                 where: { id },
                 data: {
                     status: 'REFUNDED',
@@ -359,6 +363,18 @@ export class OrdersService {
                 },
                 include: { payment: true, progressTracker: true, refund: true },
             });
+
+            const updatedOrder = await this.prisma.order.findUnique({
+                where: { id },
+                include: { payment: true, progressTracker: true, refund: true },
+            });
+
+            const settings = await this.prisma.settings.findFirst();
+            if (!settings) throw new BadRequestException('Settings record not found');
+
+            if (settings.refundRequests) {
+                await sendRefundRequestEmail(updatedOrder)
+            }
 
             return {
                 message: 'Refund request raised successfully!',

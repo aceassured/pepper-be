@@ -97,7 +97,7 @@ export class OrdersController {
   }
 
   // Recent booking for dahsboard
-  @Get()
+  @Get('recent-orders')
   getAllOrders() {
     return this.ordersService.getAllOrders();
   }

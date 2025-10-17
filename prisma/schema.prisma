@@ -279,6 +279,7 @@ enum ValidSettings {
   dailySummary
   weeklySummary
   monthlySummary
+  refundRequests
 }
 
 model Settings {
@@ -288,6 +289,7 @@ model Settings {
   dailySummary         Boolean  @default(false)
   weeklySummary        Boolean  @default(false)
   monthlySummary       Boolean  @default(false)
+  refundRequests       Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

@@ -221,6 +221,11 @@ export class AdminController {
         return this.adminService.toggleSetting(field);
     }
 
+    @Get('fetch-settings')
+    async fetchSettings() {
+        return this.adminService.fetchSettings()
+    }
+
     @Get('daily-summary')
     async geDailySummary() {
         return this.adminService.fetchDailySummary()
@@ -236,6 +241,6 @@ export class AdminController {
         return this.adminService.fetchMonthlySummary()
     }
 
-     // ==== End of notification module ====
+    // ==== End of notification module ====
 
 }

@@ -10,8 +10,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { OrderRefundStatus, OrderStatus, PaymentMethod, PaymentStatus, RefundStatus, StageStatus, StageType, ValidSettings } from '@prisma/client';
 import Razorpay from 'razorpay';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
-import { contains } from 'class-validator';
-import { error } from 'console';
+import { sendSummaryReport } from '../common/summaryNotification';
 
 
 @Injectable()
@@ -142,6 +141,10 @@ export class AdminService {
             });
 
             if (!user) throw new BadRequestException('User not found');
+
+            if (user.password !== dto.currentPassword) {
+                throw new BadRequestException('Please enter a correct current password to update new password')
+            }
 
             if (user.password === dto.password) {
                 throw new BadRequestException('New password must be different from old password')
@@ -1441,6 +1444,7 @@ export class AdminService {
                 'dailySummary',
                 'weeklySummary',
                 'monthlySummary',
+                'refundRequests'
             ];
 
             if (!validFields.includes(field)) {
@@ -1464,14 +1468,27 @@ export class AdminService {
         }
     }
 
+    async fetchSettings() {
+        try {
+            const settings = await this.prisma.settings.findFirst();
+            return { message: 'Settings fetched successfully', settings }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
     // Fetch daily summary
     async fetchDailySummary() {
         try {
-            const endDate = new Date();
-            endDate.setHours(23, 59, 59, 999);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-            const startDate = new Date();
-            startDate.setHours(0, 0, 0, 0);
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - 1); // yesterday start
+
+            const endDate = new Date(today);
+            endDate.setMilliseconds(-1); // yesterday end (23:59:59.999)
+
 
             const [totalVisitors, totalOrders, paidOrders, pendingOrders] = await Promise.all([
                 this.prisma.user.count({
@@ -1504,6 +1521,7 @@ export class AdminService {
             const totalPendingRevenue = pendingOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
 
             const dashboardData = {
+                value: 'Daily',
                 totalVisitors,
                 totalOrders,
                 totalRevenue,
@@ -1512,7 +1530,20 @@ export class AdminService {
                 endDate
             };
 
-            return { message: 'Showing the weekly summary', dashboardData };
+            const summaryResponse = {
+                message: "Showing the daily summary",
+                dashboardData
+            }
+
+            const settings = await this.prisma.settings.findFirst();
+            if (!settings) throw new BadRequestException('Settings record not found');
+
+            if (settings.dailySummary) {
+                await sendSummaryReport(summaryResponse);
+            }
+
+
+            return { message: 'Showing the daily summary', dashboardData };
         } catch (error) {
             console.error('Error fetching weekly summary:', error);
             throw error;
@@ -1560,6 +1591,7 @@ export class AdminService {
             const totalPendingRevenue = pendingOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
 
             const dashboardData = {
+                value: 'Weekly',
                 totalVisitors,
                 totalOrders,
                 totalRevenue,
@@ -1567,6 +1599,19 @@ export class AdminService {
                 startDate,
                 endDate
             };
+
+            const summaryResponse = {
+                message: "Showing the weekly summary",
+                dashboardData
+            }
+
+            const settings = await this.prisma.settings.findFirst();
+            if (!settings) throw new BadRequestException('Settings record not found');
+
+            if (settings.weeklySummary) {
+                await sendSummaryReport(summaryResponse);
+            }
+
 
             return { message: 'Showing the weekly summary', dashboardData };
         } catch (error) {
@@ -1616,6 +1661,7 @@ export class AdminService {
             const totalPendingRevenue = pendingOrders.reduce((acc, o) => acc + o.totalAmountInPaise, 0);
 
             const dashboardData = {
+                value: 'Monthly',
                 totalVisitors,
                 totalOrders,
                 totalRevenue,
@@ -1623,6 +1669,19 @@ export class AdminService {
                 startDate,
                 endDate,
             };
+
+            const summaryResponse = {
+                message: "Showing the monthly summary",
+                dashboardData
+            }
+
+            const settings = await this.prisma.settings.findFirst();
+            if (!settings) throw new BadRequestException('Settings record not found');
+
+            if (settings.monthlySummary) {
+                await sendSummaryReport(summaryResponse);
+            }
+
 
             return { message: 'Showing the monthly summary', dashboardData };
         } catch (error) {
