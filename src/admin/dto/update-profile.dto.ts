@@ -9,6 +9,7 @@ export class UpdateProfileDto {
     @IsEmail({}, { message: 'Invalid email format' })
     email: string;
 
+    @IsOptional()
     @IsNotEmpty({ message: 'Password is required' })
     @Matches(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
