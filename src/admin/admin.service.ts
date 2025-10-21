@@ -1191,6 +1191,11 @@ export class AdminService {
             include: { payment: true, refund: true },
         }) || (() => { throw new BadRequestException('No order found with the id') })()
 
+        console.log({
+            keyId: process.env.RAZORPAY_KEY_ID,
+            hasSecret: !!process.env.RAZORPAY_KEY_SECRET
+        });
+
         if (!order) throw new NotFoundException('Order not found');
         if (!order.payment) throw new BadRequestException('Payment not found for this order');
         if (order.refund) throw new BadRequestException('Refund already processed for this order');

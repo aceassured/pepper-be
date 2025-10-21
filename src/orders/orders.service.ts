@@ -193,6 +193,7 @@ export class OrdersService {
                             status: 'CAPTURED',
                             razorpayPaymentId,
                             razorpaySignature,
+                            captured: true
                         },
                     },
                 },
@@ -237,6 +238,7 @@ export class OrdersService {
                         update: {
                             razorpayPaymentId: razorpayPaymentId,
                             status: "CAPTURED",
+                            captured: true
                         },
                     },
                 },
