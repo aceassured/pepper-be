@@ -11,6 +11,8 @@ import { OrderRefundStatus, OrderStatus, PaymentMethod, PaymentStatus, RefundSta
 import Razorpay from 'razorpay';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
 import { sendSummaryReport } from '../common/summaryNotification';
+import { CreateInventoryDto } from './dto/create-inventory.dto';
+import { UpdateInventoryDto } from './dto/update-inventory.dto';
 
 
 @Injectable()
@@ -1696,6 +1698,81 @@ export class AdminService {
     }
 
     // ==== End of notification module ====
+
+    // ==== Start of inventory module ====
+
+    async create(dto: CreateInventoryDto) {
+        try {
+            // Check if month already exists
+            const existing = await this.prisma.inventory.findFirst({
+                where: { month: dto.month },
+            });
+
+            if (existing) {
+                throw new BadRequestException('Inventory for this month already exists');
+            }
+
+            return this.prisma.inventory.create({
+                data: dto,
+            });
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async findAll() {
+        try {
+            const inventory = await this.prisma.inventory.findMany({
+                orderBy: { createdAt: 'asc' },
+            });
+            return { message: 'Showing the list of inventory records', inventory }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+
+    async findByMonth(month: string) {
+        try {
+            const record = await this.prisma.inventory.findFirst({ where: { month } });
+            if (!record) throw new NotFoundException('Inventory not found for this month');
+            return record;
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async update(month: string, dto: UpdateInventoryDto) {
+        try {
+            const record = await this.prisma.inventory.findFirst({ where: { month } });
+            if (!record) throw new NotFoundException('Inventory not found for this month');
+
+            return this.prisma.inventory.update({
+                where: { id: record.id },
+                data: {
+                    maxQuantity: dto.maxQuantity,
+                    currentQuantity: dto.maxQuantity
+                },
+            });
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async deleteInventoryRecord(id: number) {
+        try {
+            await this.prisma.inventory.findUnique({ where: { id } }) || (() => {
+                throw new BadRequestException('Inventory record not found')
+            })()
+
+            await this.prisma.inventory.delete({ where: { id } });
+            return { message: 'Inventory record deleted successfully' }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+
 
 
 }

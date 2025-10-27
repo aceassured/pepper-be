@@ -6,6 +6,8 @@ import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from '../user/dto/otp.dto'
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import type { Response } from 'express';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
+import { CreateInventoryDto } from './dto/create-inventory.dto';
+import { UpdateInventoryDto } from './dto/update-inventory.dto';
 
 
 @Controller('admin')
@@ -242,5 +244,32 @@ export class AdminController {
     }
 
     // ==== End of notification module ====
+
+
+    // ==== Start of inventory module ====
+    @Post('create-inventory')
+    create(@Body() dto: CreateInventoryDto) {
+        return this.adminService.create(dto);
+    }
+
+    @Get('fetch-inventory')
+    findAll() {
+        return this.adminService.findAll();
+    }
+
+    @Get('fetch-inventory/:month')
+    findByMonth(@Param('month') month: string) {
+        return this.adminService.findByMonth(month);
+    }
+
+    @Put('update-inventory/:month')
+    update(@Param('month') month: string, @Body() dto: UpdateInventoryDto) {
+        return this.adminService.update(month, dto);
+    }
+
+    @Delete('delete-inventory/:id')
+    async removeInventory(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.deleteInventoryRecord(id)
+    }
 
 }

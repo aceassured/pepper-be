@@ -84,7 +84,7 @@ model Order {
   // product / order summary
   productName         String?   @default("Kumbukkal Selection Black Pepper Saplings")
   productId           Int?      @default(1)
-  deliveryDate        DateTime?
+  deliveryDate        String?
   deliveryLocation    String?   @default("Kerala, Kottayam District")
   quantity            Int
   pricePerUnitInPaise Decimal   @db.Decimal(5, 2)
@@ -292,4 +292,13 @@ model Settings {
   refundRequests       Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+}
+
+model Inventory {
+  id              Int      @id @default(autoincrement())
+  month           String // e.g. "2025-10" (YYYY-MM)
+  maxQuantity     Int
+  currentQuantity Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

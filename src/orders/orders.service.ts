@@ -26,6 +26,18 @@ export class OrdersService {
     async createOrder(userId: number, dto: CreateOrderDto) {
         try {
             const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
+
+            const selectedMonth = new Date(dto.deliveryDate).toISOString().slice(0, 7);
+            console.log(selectedMonth)
+
+            const record = await this.prisma.inventory.findFirst({ where: { month: selectedMonth } });
+            if (!record) throw new NotFoundException('Inventory not found for this month');
+
+            if (record.currentQuantity < dto.quantity) {
+                throw new BadRequestException('Not enough inventory available');
+            }
+
+
             // 1️⃣ Create Razorpay order
             const razorpayOrder = await this.razorpay.orders.create({
                 amount: totalAmountInPaise,
@@ -131,6 +143,13 @@ export class OrdersService {
                 },
             });
 
+            await this.prisma.inventory.update({
+                where: { id: record.id },
+                data: {
+                    currentQuantity: record.currentQuantity - dto.quantity,
+                },
+            });
+
 
             // console.log('New Order', await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } }));
             const updatedOrder = await this.prisma.order.findUnique({ where: { id: order.id }, include: { payment: true, progressTracker: true } })
@@ -138,6 +157,8 @@ export class OrdersService {
             if (settings?.newBookings) {
                 sendAdminNewOrderEmail(updatedOrder)
             }
+
+
 
             return {
                 order,

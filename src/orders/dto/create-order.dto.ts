@@ -30,9 +30,11 @@ export class CreateOrderDto {
     productName?: string;
 
     @IsNotEmpty()
-    @Type(() => Date)
-    @IsDate()
-    deliveryDate: Date;
+    @IsString()
+    @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, {
+        message: 'deliveryDate must be in YYYY-MM format (e.g., 2025-11)'
+    })
+    deliveryDate: string;
 
     @IsOptional()
     @IsString()
