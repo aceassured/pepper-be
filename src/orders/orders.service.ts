@@ -27,6 +27,8 @@ export class OrdersService {
         try {
             const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
 
+            const totalAmountInRupees = Number(dto.pricePerUnitInPaise) * Number(dto.quantity);
+
             const selectedMonth = new Date(dto.deliveryDate).toISOString().slice(0, 7);
             console.log(selectedMonth)
 
@@ -96,7 +98,7 @@ export class OrdersService {
                     deliveryLocation: dto.deliveryLocation,
                     quantity: dto.quantity,
                     pricePerUnitInPaise: dto.pricePerUnitInPaise,
-                    totalAmountInPaise,
+                    totalAmountInPaise:totalAmountInRupees,
                     currency: 'INR',
                     fullName: dto.fullName,
                     email: dto.email,
@@ -114,7 +116,7 @@ export class OrdersService {
                         create: {
                             provider: 'razorpay',
                             razorpayOrderId: razorpayOrder.id,
-                            amountInPaise: totalAmountInPaise,
+                            amountInPaise: totalAmountInRupees,
                             currency: 'INR',
                             status: 'CREATED',
                         },
@@ -164,7 +166,7 @@ export class OrdersService {
                 order,
                 razorpayKeyId: process.env.RAZORPAY_KEY_ID,
                 razorpayOrderId: razorpayOrder.id,
-                amount: totalAmountInPaise,
+                amount: totalAmountInRupees,
                 currency: 'INR',
             };
         } catch (error) {
