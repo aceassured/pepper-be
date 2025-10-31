@@ -96,6 +96,25 @@ export class OrdersController {
     return this.ordersService.refundRequest(id, body, files || []);
   }
 
+  @Put('cancel-request/:id')
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file - adjust as needed
+      // You can add fileFilter to restrict MIME types (image/png, image/jpeg etc)
+    }),
+  )
+  async raiseCancelRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: RefundRequestDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    // if (!body || !body.reason) {
+    //   throw new BadRequestException('Refund reason is required');
+    // }
+
+    return this.ordersService.raiseCancelRequest(id, body, files || []);
+  }
+
   // Recent booking for dahsboard
   @Get('recent-orders')
   getAllOrders() {

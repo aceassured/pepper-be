@@ -98,7 +98,7 @@ export class OrdersService {
                     deliveryLocation: dto.deliveryLocation,
                     quantity: dto.quantity,
                     pricePerUnitInPaise: dto.pricePerUnitInPaise,
-                    totalAmountInPaise:totalAmountInRupees,
+                    totalAmountInPaise: totalAmountInRupees,
                     currency: 'INR',
                     fullName: dto.fullName,
                     email: dto.email,
@@ -412,6 +412,110 @@ export class OrdersService {
             console.error(error);
             if (error instanceof BadRequestException) throw error;
             throw new InternalServerErrorException('Failed to raise refund request');
+        }
+    }
+
+    async raiseCancelRequest(
+        id: number,
+        dto: RefundRequestDto,
+        files: Express.Multer.File[],
+    ) {
+        try {
+            const order = await this.prisma.order.findUnique({ where: { id } });
+            if (!order) throw new BadRequestException('No order found with the id');
+
+            const existingMeta =
+                order.metadata && typeof order.metadata === 'object'
+                    ? order.metadata
+                    : {};
+
+            // If existing refund metadata exists, we’ll re-use uploaded hashes/URLs
+            const existingRefundMeta =
+                (existingMeta.refundRequest && existingMeta.refundRequest.images) || [];
+
+            // For duplicate checking, create a quick lookup of hash->url
+            const existingHashMap = new Map<string, string>();
+            for (const img of existingRefundMeta) {
+                if (img.hash && img.url) existingHashMap.set(img.hash, img.url);
+            }
+
+            const uploadedImages: { url: string; hash: string }[] = [];
+
+            for (const file of files || []) {
+                const fileBuffer = file.buffer;
+                const hash = createHash('md5').update(fileBuffer).digest('hex');
+
+                // Check if this hash already uploaded
+                if (existingHashMap.has(hash)) {
+                    uploadedImages.push({
+                        url: existingHashMap.get(hash)!,
+                        hash,
+                    });
+                    continue; // skip re-upload
+                }
+
+                try {
+                    const ext =
+                        (file.originalname && file.originalname.split('.').pop()) || 'bin';
+                    const filename = `refunds/${id}/${Date.now()}-${randomUUID()}.${ext}`;
+
+                    const blob = await put(filename, fileBuffer, {
+                        access: 'public',
+                    });
+
+                    // Only .url is valid
+                    const url = blob.url;
+                    uploadedImages.push({ url, hash });
+                } catch (err) {
+                    console.error('Failed uploading file to Vercel Blob:', err);
+                    throw new InternalServerErrorException('Failed to upload image');
+                }
+            }
+
+            const oldRefundRequest = existingMeta.refundRequest || {};
+
+            const refundMeta = {
+                refundRequest: {
+                    reason: dto.reason ?? oldRefundRequest.reason,
+                    images: uploadedImages.length > 0 ? uploadedImages : oldRefundRequest.images || [],
+                    requestedAt: new Date().toISOString(),
+                },
+            };
+
+            const newMetadata = { ...existingMeta, ...refundMeta };
+
+
+            await this.prisma.order.update({
+                where: { id },
+                data: {
+                    status: 'CANCELLED',
+                    refundRequestDate: new Date(),
+                    refundStatus: 'PENDING',
+                    metadata: newMetadata,
+                },
+                include: { payment: true, progressTracker: true, refund: true },
+            });
+
+            const updatedOrder = await this.prisma.order.findUnique({
+                where: { id },
+                include: { payment: true, progressTracker: true, refund: true },
+            });
+
+            const settings = await this.prisma.settings.findFirst();
+            if (!settings) throw new BadRequestException('Settings record not found');
+
+            if (settings.refundRequests) {
+                sendRefundRequestEmail(updatedOrder)
+            }
+
+            return {
+                message: 'Cancel request raised successfully!',
+                order: updatedOrder,
+            };
+        } catch (error) {
+            console.error(error);
+            if (error instanceof BadRequestException) throw error;
+            throw new InternalServerErrorException('Failed to raise cancel request');
         }
     }
 
