@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateInventoryDto {
     @IsString()
@@ -12,6 +12,10 @@ export class CreateInventoryDto {
     currentQuantity: number;
 
     @IsOptional()
+    @IsBoolean()
+    active?: boolean;
+    
+    @IsOptional()
     @IsString()
-    reason: string;
+    reason?: string;
 }

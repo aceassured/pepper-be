@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreateUserDto } from '../user/dto/create-user-dto';
@@ -273,8 +273,8 @@ export class AdminController {
     }
 
     @Put('/update-inventory-status/:id')
-    async toggleInventoryStatus(@Param('id', ParseIntPipe) id: number) {
-        return this.adminService.toggleInventoryStatus(id)
+    async toggleInventoryStatus(@Param('id', ParseIntPipe) id: number, @Body() { reason }: { reason: string }) {
+        return this.adminService.toggleInventoryStatus(id, reason)
     }
 
 }

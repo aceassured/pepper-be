@@ -1773,8 +1773,11 @@ export class AdminService {
     }
 
 
-    async toggleInventoryStatus(id: number) {
+    async toggleInventoryStatus(id: number, reason: string) {
         try {
+            if (!reason) {
+                throw new BadRequestException('Reason is required')
+            }
             const inventory = await this.prisma.inventory.findUnique({ where: { id } }) || (() => {
                 throw new BadRequestException('Inventory record not found')
             })()
@@ -1782,7 +1785,8 @@ export class AdminService {
             const updatedInventory = await this.prisma.inventory.update({
                 where: { id },
                 data: {
-                    active: !inventory.active
+                    active: !inventory.active,
+                    reason: reason
                 }
             })
 
