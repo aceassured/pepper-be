@@ -1773,6 +1773,22 @@ export class AdminService {
     }
 
 
+    async toggleInventoryStatus(id: number) {
+        try {
+            const inventory = await this.prisma.inventory.findUnique({ where: { id } }) || (() => {
+                throw new BadRequestException('Inventory record not found')
+            })()
 
+            const updatedInventory = await this.prisma.inventory.update({
+                where: { id },
+                data: {
+                    active: !inventory.active
+                }
+            })
 
+            return { message: 'Inventory status updated successfully', updatedInventory }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
 }

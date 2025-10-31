@@ -272,4 +272,9 @@ export class AdminController {
         return this.adminService.deleteInventoryRecord(id)
     }
 
+    @Put('/update-inventory-status/:id')
+    async toggleInventoryStatus(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.toggleInventoryStatus(id)
+    }
+
 }
