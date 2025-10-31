@@ -1751,7 +1751,9 @@ export class AdminService {
                 where: { id: record.id },
                 data: {
                     maxQuantity: dto.maxQuantity,
-                    currentQuantity: dto.maxQuantity
+                    currentQuantity: dto.maxQuantity,
+                    active: dto.active,
+                    reason: dto.reason
                 },
             });
         } catch (error) {
