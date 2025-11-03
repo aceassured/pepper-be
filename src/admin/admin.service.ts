@@ -1,3 +1,4 @@
+import { ProgressTracker } from './../../node_modules/.prisma/client/index.d';
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { catchBlock } from '../common/CatchBlock';
@@ -13,6 +14,9 @@ import { CreateOrderDto } from '../orders/dto/create-order.dto';
 import { sendSummaryReport } from '../common/summaryNotification';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
+import { randomUUID } from 'crypto';
+import { put } from '@vercel/blob';
+import { CreateBlogDto } from '../user/dto/create-blog.dto';
 
 
 @Injectable()
@@ -993,6 +997,44 @@ export class AdminService {
         }
     }
 
+    async fetchAllCancelledPayments(page: number) {
+        try {
+            const pageSize = 5
+            const skip = (page - 1) * pageSize
+
+            const totalCount = await this.prisma.order.count({
+                where: {
+                    refundStatus: 'CANCELLED'
+                },
+            })
+
+            const data = await this.prisma.order.findMany({
+                where: {
+                    status: 'CANCELLED'
+                },
+                include: {
+                    refund: true,
+                    progressTracker: true
+                },
+                skip: skip,
+                take: pageSize
+            })
+
+            const cancelledOrders = {
+                data,
+                pageSize,
+                totalPage: totalCount,
+                currentPage: page
+            }
+
+
+            return { message: `Showing the cancelled orders for the page ${page}`, cancelledOrders }
+
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
     //==== refund management ====
 
     // Fetch cards data for refund dashboard
@@ -1751,7 +1793,7 @@ export class AdminService {
                 where: { id: record.id },
                 data: {
                     maxQuantity: dto.maxQuantity,
-                    currentQuantity: dto.maxQuantity,
+                    currentQuantity: dto.currentQuantity,
                     active: dto.active,
                     reason: dto.reason
                 },
@@ -1797,4 +1839,118 @@ export class AdminService {
             catchBlock(error)
         }
     }
+
+    // Blog management module
+
+    async uploadBuffer(buffer: Buffer, originalName: string, mimeType?: string) {
+        try {
+            const ext = (originalName.match(/\.[^/.]+$/) || [''])[0];
+            const filename = `${Date.now()}-${randomUUID()}${ext || ''}`;
+
+            // options: access public so you can serve images
+            const result = await put(filename, buffer, {
+                access: 'public',
+                contentType: mimeType,
+            });
+
+            // result should include a URL. SDK returns a blob object with properties like url or downloadUrl.
+            // Using `result.url` here — verify locally (or log result to confirm exact field).
+            const url = (result as any).url ?? (result as any).downloadUrl ?? null;
+            if (!url) throw new Error('No URL returned from Vercel Blob SDK');
+
+            return {
+                url,
+                meta: result,
+            };
+        } catch (err) {
+            catchBlock(err)
+        }
+    }
+
+    async createBlog(createDto: CreateBlogDto, file?: Express.Multer.File) {
+        try {
+            const data: any = {
+                title: createDto.title,
+                excerpt: createDto.excerpt,
+                content: createDto.content,
+                seoTitle: createDto.seoTitle,
+                seoDescription: createDto.seoDescription,
+                seoKeywords: createDto.seoKeywords,
+                status: createDto.status ?? 'PUBLISHED',
+            };
+
+            if (createDto.publishedAt) {
+                const d = new Date(createDto.publishedAt);
+                if (isNaN(d.getTime())) throw new BadRequestException('Invalid publishedAt');
+                data.publishedAt = d;
+            }
+
+            if (file) {
+                const uploaded = await this.uploadBuffer(file.buffer, file.originalname, file.mimetype);
+                data.thumbnailUrl = uploaded?.url;
+            }
+
+            const blog = await this.prisma.blog.create({
+                data: {
+                    category: { connect: { id: createDto.categoryId } },
+                    ...data
+                }
+            });
+            return blog;
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async findAllBlogs() {
+        return this.prisma.blog.findMany({ include: { category: true }, orderBy: { createdAt: 'desc' } });
+    }
+
+    async findOneBlog(id: number) {
+        try {
+            const blog = await this.prisma.blog.findUnique({ where: { id }, include: { category: true } });
+            if (!blog) throw new NotFoundException('Blog not found');
+            return blog;
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async updateBlog(id: number, updateDto: CreateBlogDto, file?: Express.Multer.File) {
+        try {
+            const current = await this.prisma.blog.findUnique({ where: { id } });
+            if (!current) throw new NotFoundException('Blog not found');
+
+            const data: any = { ...updateDto };
+
+            if (updateDto.publishedAt) {
+                const d = new Date(updateDto.publishedAt);
+                if (isNaN(d.getTime())) throw new BadRequestException('Invalid publishedAt');
+                data.publishedAt = d;
+            }
+
+            if (file) {
+                const uploaded = await this.uploadBuffer(file.buffer, file.originalname, file.mimetype);
+                data.thumbnailUrl = uploaded?.url;
+            }
+
+            const updated = await this.prisma.blog.update({ where: { id }, data });
+            return updated;
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async removeBlog(id: number) {
+        try {
+            await this.prisma.blog.findUnique({ where: { id } }) || (() => { throw new BadRequestException('Blog not found') })()
+            await this.prisma.blog.delete({ where: { id } });
+            return { success: true, message: 'Blog deleted successfully' };
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+
+
 }

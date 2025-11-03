@@ -1,8 +1,11 @@
-import { BadRequestException, Body, Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Post, Query } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpException, HttpStatus, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { CreateUserDto } from "./dto/create-user-dto";
 import { ResetPasswordDto, SendOtpDto, VerifyOtpDto } from "./dto/otp.dto";
 import { ContactDto } from "./dto/contact.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { CreateBlogDto } from "./dto/create-blog.dto";
+import { CreateTestimonialDto } from "./dto/create-testimonial.dto";
 
 
 
@@ -198,4 +201,36 @@ export class UserController {
             );
         }
     }
+
+    // Tesimonial module
+
+    @Post('create-testimonial')
+    async create(@Body() dto: CreateTestimonialDto) {
+        return this.userService.createTestimonial(dto);
+    }
+
+    @Get('fetch-all-testimonials')
+    async findAll() {
+        return this.userService.findAllTestimonials();
+    }
+
+    @Get('fetch-testimonial/:id')
+    async findOne(@Param('id', ParseIntPipe) id: number) {
+        return this.userService.findOneTestimonial(id);
+    }
+
+    @Put('update-testimonial/:id')
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: CreateTestimonialDto,
+    ) {
+        return this.userService.updateTestimonial(id, dto);
+    }
+
+    @Delete('delete-testimonial/:id')
+    async remove(@Param('id', ParseIntPipe) id: number) {
+        return this.userService.removeTestimonial(id);
+    }
+
+
 }

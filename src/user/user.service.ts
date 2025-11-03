@@ -2,6 +2,7 @@ import {
     Injectable,
     BadRequestException,
     UnauthorizedException,
+    NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +14,10 @@ import { sendOtpToUser } from '../common/send-otp';
 import { ContactDto } from './dto/contact.dto';
 import { sendContactMail } from '../common/sendContactMail';
 import * as pincodes from 'indian-pincodes'
+import { put } from '@vercel/blob';
+import { randomUUID } from 'crypto';
+import { CreateBlogDto } from './dto/create-blog.dto';
+import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 
 
 
@@ -605,5 +610,71 @@ export class UserService {
             catchBlock(error);
         }
     }
+
+    // Testimonials module
+
+    async createTestimonial(dto: CreateTestimonialDto) {
+        try {
+            const result = await this.prisma.testimonials.create({
+                data: {
+                    name: dto.name,
+                    place: dto.place,
+                    rating: dto.rating,
+                    message: dto.message,
+                    active: dto.active ?? true,
+                },
+            });
+            return { message: 'New testmonial added successfully!', result }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async findAllTestimonials() {
+        try {
+            return this.prisma.testimonials.findMany({
+                orderBy: { createdAt: 'desc' },
+            });
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async findOneTestimonial(id: number) {
+        try {
+            const testimonial = await this.prisma.testimonials.findUnique({
+                where: { id },
+            });
+            if (!testimonial) throw new NotFoundException('Testimonial not found');
+            return testimonial;
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async updateTestimonial(id: number, dto: CreateTestimonialDto) {
+        try {
+            const existing = await this.prisma.testimonials.findUnique({ where: { id } });
+            if (!existing) throw new NotFoundException('Testimonial not found');
+
+            return this.prisma.testimonials.update({
+                where: { id },
+                data: { ...dto },
+            });
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async removeTestimonial(id: number) {
+        try {
+            await this.prisma.testimonials.findUnique({ where: { id } }) || (()=>{throw new BadRequestException("Testimonial not found")})()
+            await this.prisma.testimonials.delete({ where: { id } });
+            return { success: true , message:'Testimonial removed successfully!' };
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
 
 }

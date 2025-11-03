@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreateUserDto } from '../user/dto/create-user-dto';
@@ -8,6 +8,8 @@ import type { Response } from 'express';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
+import { CreateBlogDto } from '../user/dto/create-blog.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 
 @Controller('admin')
@@ -180,6 +182,11 @@ export class AdminController {
         return this.adminService.exportRefundData()
     }
 
+    @Get('fetch-cancelled-order/:page')
+    async fetchCancelledOrders(@Param('page',ParseIntPipe) page:number) {
+        return this.adminService.fetchAllCancelledPayments(page)
+    }
+
     // ==== End of refund managment ====
 
     // ==== callback module ====
@@ -275,6 +282,42 @@ export class AdminController {
     @Put('/update-inventory-status/:id')
     async toggleInventoryStatus(@Param('id', ParseIntPipe) id: number, @Body() { reason }: { reason: string }) {
         return this.adminService.toggleInventoryStatus(id, reason)
+    }
+
+    // Blog management module
+    // Create: expects multipart/form-data with fields and optional file field 'thumbnail'
+    @Post('create-blog')
+    @UseInterceptors(FileInterceptor('thumbnail'))
+    async createBlog(
+        @UploadedFile() file: Express.Multer.File,
+        @Body() body: CreateBlogDto,
+    ) {
+        return this.adminService.createBlog(body, file);
+    }
+
+    @Get('fetch-all-blogs')
+    async findAllBlogs() {
+        return this.adminService.findAllBlogs();
+    }
+
+    @Get('fetch-blog/:id')
+    async findOneBlog(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.findOneBlog(id);
+    }
+
+    @Put('update-blog/:id')
+    @UseInterceptors(FileInterceptor('thumbnail'))
+    async updateBlog(
+        @Param('id', ParseIntPipe) id: number,
+        @UploadedFile() file: Express.Multer.File,
+        @Body() body: CreateBlogDto,
+    ) {
+        return this.adminService.updateBlog(id, body, file);
+    }
+
+    @Delete('delete-blog/:id')
+    async remove(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.removeBlog(id);
     }
 
 }

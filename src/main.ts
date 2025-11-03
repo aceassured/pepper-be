@@ -15,6 +15,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
+    transformOptions: {
+      enableImplicitConversion: true, // ✅ converts string -> number automatically
+    },
     exceptionFactory: (errors) => {
       const firstError = errors[0]
       const constraints = firstError?.constraints

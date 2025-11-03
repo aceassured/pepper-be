@@ -82,14 +82,14 @@ model Order {
   orderId String? @unique
 
   // product / order summary
-  productName         String?   @default("Kumbukkal Selection Black Pepper Saplings")
-  productId           Int?      @default(1)
+  productName         String? @default("Kumbukkal Selection Black Pepper Saplings")
+  productId           Int?    @default(1)
   deliveryDate        String?
-  deliveryLocation    String?   @default("Kerala, Kottayam District")
+  deliveryLocation    String? @default("Kerala, Kottayam District")
   quantity            Int
-  pricePerUnitInPaise Decimal   @db.Decimal(5, 2)
+  pricePerUnitInPaise Decimal @db.Decimal(5, 2)
   totalAmountInPaise  Int
-  currency            String    @default("INR")
+  currency            String  @default("INR")
 
   // customer details
   fullName        String
@@ -299,8 +299,57 @@ model Inventory {
   month           String // e.g. "2025-10" (YYYY-MM)
   maxQuantity     Int
   currentQuantity Int
-  active          Boolean @default(true)
-  reason          String? 
+  active          Boolean  @default(true)
+  reason          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// Testimonials model
+
+model Testimonials {
+  id        Int      @id @default(autoincrement())
+  name      String
+  place     String
+  rating    Int
+  message   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Blob management model
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  tags      String[]
+  blogs     Blog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Blog {
+  id           Int       @id @default(autoincrement())
+  title        String
+  excerpt      String? // Short summary for previews or meta description
+  content      String // Full HTML or Markdown content
+  thumbnailUrl String? // Blog cover image URL
+  categoryId   Int?
+  category     Category? @relation(fields: [categoryId], references: [id])
+
+  status      BlogStatus @default(PUBLISHED) // draft, published, archived
+  publishedAt DateTime? // when blog goes live
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  seoTitle       String? // Custom meta title for SEO
+  seoDescription String? // Custom meta description for SEO
+  seoKeywords    String? // Comma-separated keywords
 }
