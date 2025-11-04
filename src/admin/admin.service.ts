@@ -1861,6 +1861,19 @@ export class AdminService {
         });
     }
 
+    async deleteCategory(id: number) {
+        try {
+            await this.prisma.category.findUnique({ where: { id } }) || (() => {
+                throw new BadRequestException('Category not found')
+            })
+
+            await this.prisma.category.delete({ where: { id } });
+            return { message: 'Category deleted successfully' }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
     // ---------- Tags ----------
     async createTag(dto: CreateTagDto) {
         return this.prisma.tags.create({
@@ -1874,6 +1887,19 @@ export class AdminService {
         return this.prisma.tags.findMany({
             orderBy: { createdAt: 'desc' },
         });
+    }
+
+    async deleteTag(id: number) {
+        try {
+            const tag = await this.prisma.tags.findUnique({ where: { id } }) || (() => {
+                throw new BadRequestException('Tag not found')
+            })
+
+            await this.prisma.tags.delete({ where: { id } });
+            return { message: 'Tag deleted successfully' }
+        } catch (error) {
+            catchBlock(error)
+        }
     }
 
     async uploadBuffer(buffer: Buffer, originalName: string, mimeType?: string) {

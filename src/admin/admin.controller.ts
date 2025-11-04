@@ -301,6 +301,15 @@ export class AdminController {
         return this.adminService.getAllCategories();
     }
 
+    @Delete('delete-category/:id')
+    async deleteCategory(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.deleteCategory(id)
+    }
+
+    @Delete('delete-tag/:id')
+    async deleteTag(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.deleteTag(id);
+    }
     // ---------- Tags ----------
     @Post('create-tags')
     async createTag(@Body() dto: CreateTagDto) {
