@@ -630,11 +630,27 @@ export class UserService {
         }
     }
 
-    async findAllTestimonials() {
+    async findAllTestimonials(page: number) {
         try {
-            return this.prisma.testimonials.findMany({
+            const pageSize = 5;
+            const skip = (page - 1) * pageSize;
+
+            const totalCount = await this.prisma.testimonials.count();
+
+            const testimonials = await this.prisma.testimonials.findMany({
                 orderBy: { createdAt: 'desc' },
+                skip,
+                take: pageSize
             });
+
+            const data = {
+                testimonials,
+                currentPage: page,
+                pageSize,
+                totalCount,
+                totalPages: Math.ceil(totalCount / pageSize)
+            }
+            return { message: 'Showing all the testimonials data', data }
         } catch (error) {
             catchBlock(error)
         }

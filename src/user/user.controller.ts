@@ -209,9 +209,9 @@ export class UserController {
         return this.userService.createTestimonial(dto);
     }
 
-    @Get('fetch-all-testimonials')
-    async findAll() {
-        return this.userService.findAllTestimonials();
+    @Get('fetch-all-testimonials/:page')
+    async findAll(@Param('page', ParseIntPipe) page: number) {
+        return this.userService.findAllTestimonials(page);
     }
 
     @Get('fetch-testimonial/:id')
