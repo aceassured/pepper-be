@@ -179,9 +179,11 @@ export class OrdersService {
         try {
             const orders = await this.prisma.order.findMany({
                 where: {
-                    AND: [
-                        { userId: userId },
-                        { status: "PAID" }
+                    AND:[
+                        { user: { id: userId } },
+                        { status: {
+                            in : ['PAID', 'CANCELLED', 'REFUNDED']
+                        }}
                     ]
                 },
                 include: { payment: true, progressTracker: true, refund: true },

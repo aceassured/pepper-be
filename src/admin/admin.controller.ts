@@ -10,6 +10,8 @@ import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { CreateBlogDto } from '../user/dto/create-blog.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { CreateTagDto } from './dto/create-tag.dto';
 
 
 @Controller('admin')
@@ -183,7 +185,7 @@ export class AdminController {
     }
 
     @Get('fetch-cancelled-order/:page')
-    async fetchCancelledOrders(@Param('page',ParseIntPipe) page:number) {
+    async fetchCancelledOrders(@Param('page', ParseIntPipe) page: number) {
         return this.adminService.fetchAllCancelledPayments(page)
     }
 
@@ -284,20 +286,75 @@ export class AdminController {
         return this.adminService.toggleInventoryStatus(id, reason)
     }
 
-    // Blog management module
+
+    // ==== Start of Blog management module =====
+
+
+    // ---------- Category ----------
+    @Post('create-category')
+    async createCategory(@Body() dto: CreateCategoryDto) {
+        return this.adminService.createCategory(dto);
+    }
+
+    @Get('fetch-all-category')
+    async getAllCategories() {
+        return this.adminService.getAllCategories();
+    }
+
+    // ---------- Tags ----------
+    @Post('create-tags')
+    async createTag(@Body() dto: CreateTagDto) {
+        return this.adminService.createTag(dto);
+    }
+
+    @Get('fetch-all-tags')
+    async getAllTags() {
+        return this.adminService.getAllTags();
+    }
     // Create: expects multipart/form-data with fields and optional file field 'thumbnail'
     @Post('create-blog')
     @UseInterceptors(FileInterceptor('thumbnail'))
     async createBlog(
         @UploadedFile() file: Express.Multer.File,
-        @Body() body: CreateBlogDto,
+        @Body() body: any,
     ) {
+        // ✅ Parse 'category' field
+        if (typeof body.category === 'string') {
+            try {
+                // handle both '["a","b"]' and "['a','b']"
+                body.category = JSON.parse(body.category.replace(/'/g, '"'));
+            } catch {
+                // fallback if parsing fails
+                body.category = body.category
+                    .replace(/[\[\]']+/g, '')
+                    .split(',')
+                    .map((item) => item.trim());
+            }
+        }
+
+        // ✅ Parse 'tags' field
+        if (typeof body.tags === 'string') {
+            try {
+                body.tags = JSON.parse(body.tags.replace(/'/g, '"'));
+            } catch {
+                body.tags = body.tags
+                    .replace(/[\[\]']+/g, '')
+                    .split(',')
+                    .map((item) => item.trim());
+            }
+        }
+
+        // Pass to your service
         return this.adminService.createBlog(body, file);
     }
 
+
+
     @Get('fetch-all-blogs')
-    async findAllBlogs() {
-        return this.adminService.findAllBlogs();
+    async findAllBlogs(@Query('search') search?: string, @Query('category') category?: string, @Query('tags') tags?: string) {
+        const parsedCategories = category ? category.split(',') : [];
+        const parsedTags = tags ? tags.split(',') : [];
+        return this.adminService.findAllBlogs(search, parsedCategories, parsedTags)
     }
 
     @Get('fetch-blog/:id')
@@ -320,4 +377,6 @@ export class AdminController {
         return this.adminService.removeBlog(id);
     }
 
+
+    // ==== End of Blog management module =====
 }

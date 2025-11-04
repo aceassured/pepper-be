@@ -652,15 +652,19 @@ export class UserService {
         }
     }
 
-    async updateTestimonial(id: number, dto: CreateTestimonialDto) {
+    async updateTestimonial(id: number) {
         try {
             const existing = await this.prisma.testimonials.findUnique({ where: { id } });
             if (!existing) throw new NotFoundException('Testimonial not found');
 
-            return this.prisma.testimonials.update({
+            const updated = await this.prisma.testimonials.update({
                 where: { id },
-                data: { ...dto },
+                data: {
+                    active: !existing.active
+                },
             });
+
+            return { message: 'Testimonial status updated successfully!', updated }
         } catch (error) {
             catchBlock(error)
         }
@@ -668,9 +672,9 @@ export class UserService {
 
     async removeTestimonial(id: number) {
         try {
-            await this.prisma.testimonials.findUnique({ where: { id } }) || (()=>{throw new BadRequestException("Testimonial not found")})()
+            await this.prisma.testimonials.findUnique({ where: { id } }) || (() => { throw new BadRequestException("Testimonial not found") })()
             await this.prisma.testimonials.delete({ where: { id } });
-            return { success: true , message:'Testimonial removed successfully!' };
+            return { success: true, message: 'Testimonial removed successfully!' };
         } catch (error) {
             catchBlock(error)
         }

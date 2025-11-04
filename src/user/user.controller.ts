@@ -221,10 +221,9 @@ export class UserController {
 
     @Put('update-testimonial/:id')
     async update(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() dto: CreateTestimonialDto,
+        @Param('id', ParseIntPipe) id: number
     ) {
-        return this.userService.updateTestimonial(id, dto);
+        return this.userService.updateTestimonial(id);
     }
 
     @Delete('delete-testimonial/:id')

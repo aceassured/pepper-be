@@ -33,7 +33,12 @@ export class CreateBlogDto {
   publishedAt?: string; // ISO date string from form-data; convert in service
 
   @IsOptional()
-  @IsInt()
-  categoryId?: number;
-  
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  category?: string[];
 }

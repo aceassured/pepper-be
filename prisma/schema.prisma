@@ -323,8 +323,13 @@ model Testimonials {
 model Category {
   id        Int      @id @default(autoincrement())
   name      String
-  tags      String[]
-  blogs     Blog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tags {
+  id        Int      @id @default(autoincrement())
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -336,13 +341,14 @@ enum BlogStatus {
 }
 
 model Blog {
-  id           Int       @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   title        String
   excerpt      String? // Short summary for previews or meta description
   content      String // Full HTML or Markdown content
   thumbnailUrl String? // Blog cover image URL
-  categoryId   Int?
-  category     Category? @relation(fields: [categoryId], references: [id])
+
+  category String[]
+  tags     String[]
 
   status      BlogStatus @default(PUBLISHED) // draft, published, archived
   publishedAt DateTime? // when blog goes live

@@ -17,6 +17,8 @@ import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { randomUUID } from 'crypto';
 import { put } from '@vercel/blob';
 import { CreateBlogDto } from '../user/dto/create-blog.dto';
+import { CreateTagDto } from './dto/create-tag.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
 
 
 @Injectable()
@@ -1147,7 +1149,9 @@ export class AdminService {
             const skip = (page - 1) * limit;
 
             const where: any = {
-                status: 'REFUNDED', // All refund-related orders
+                status: {
+                    in: ['REFUNDED', 'CANCELLED'],
+                },
             };
 
             // 🔍 Search filter
@@ -1840,7 +1844,37 @@ export class AdminService {
         }
     }
 
-    // Blog management module
+    // ==== Start of Blog management module =====
+
+    // ---------- Category ----------
+    async createCategory(dto: CreateCategoryDto) {
+        return this.prisma.category.create({
+            data: {
+                name: dto.name,
+            },
+        });
+    }
+
+    async getAllCategories() {
+        return this.prisma.category.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    // ---------- Tags ----------
+    async createTag(dto: CreateTagDto) {
+        return this.prisma.tags.create({
+            data: {
+                name: dto.name,
+            },
+        });
+    }
+
+    async getAllTags() {
+        return this.prisma.tags.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+    }
 
     async uploadBuffer(buffer: Buffer, originalName: string, mimeType?: string) {
         try {
@@ -1877,6 +1911,9 @@ export class AdminService {
                 seoDescription: createDto.seoDescription,
                 seoKeywords: createDto.seoKeywords,
                 status: createDto.status ?? 'PUBLISHED',
+                category: createDto.category,
+                tags: createDto.tags
+
             };
 
             if (createDto.publishedAt) {
@@ -1890,21 +1927,73 @@ export class AdminService {
                 data.thumbnailUrl = uploaded?.url;
             }
 
-            const blog = await this.prisma.blog.create({
-                data: {
-                    category: { connect: { id: createDto.categoryId } },
-                    ...data
-                }
-            });
+            const blog = await this.prisma.blog.create({ data });
             return blog;
         } catch (error) {
             catchBlock(error)
         }
     }
 
-    async findAllBlogs() {
-        return this.prisma.blog.findMany({ include: { category: true }, orderBy: { createdAt: 'desc' } });
+
+    async findAllBlogs(searchValue: string | undefined, parsedCategories: string[], parsedTags: string[]) {
+        try {
+            const { search, categories, tags } = { search: searchValue, categories: parsedCategories, tags: parsedTags }
+
+            // Build the dynamic Prisma "where" filter
+            const where: any = {};
+
+            // 🔍 Full-text search across multiple fields
+            if (search) {
+                const searchLower = search.toLowerCase();
+
+                where.OR = [
+                    { title: { contains: searchLower, mode: 'insensitive' } },
+                    { content: { contains: searchLower, mode: 'insensitive' } },
+                    {
+                        category: {
+                            hasSome: [search], // search matches one of the items in category array
+                        },
+                    },
+                    {
+                        tags: {
+                            hasSome: [search],
+                        },
+                    },
+                ];
+            }
+
+            // 🎯 Filter by specific categories (array filter)
+            if (categories && categories.length > 0) {
+                where.category = {
+                    hasSome: categories, // match if blog has at least one of these categories
+                };
+            }
+
+            // 🏷️ Filter by tags
+            if (tags && tags.length > 0) {
+                where.tags = {
+                    hasSome: tags,
+                };
+            }
+
+            // ⚙️ Fetch blogs
+            const blogs = await this.prisma.blog.findMany({
+                where,
+                orderBy: { createdAt: 'desc' }, // sort newest first
+            });
+
+            // 📊 Get total count for pagination info
+            const total = await this.prisma.blog.count({ where });
+
+            return {
+                total,
+                results: blogs,
+            };
+        } catch (error) {
+            catchBlock(error)
+        }
     }
+
 
     async findOneBlog(id: number) {
         try {
@@ -1950,6 +2039,9 @@ export class AdminService {
             catchBlock(error)
         }
     }
+
+
+    // ==== End of Blog management module =====
 
 
 
