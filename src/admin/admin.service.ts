@@ -19,6 +19,7 @@ import { put } from '@vercel/blob';
 import { CreateBlogDto } from '../user/dto/create-blog.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { META_FIELDS, MetaField } from './dto/update-meta.dto';
 
 
 @Injectable()
@@ -2023,7 +2024,7 @@ export class AdminService {
 
     async findOneBlog(id: number) {
         try {
-            const blog = await this.prisma.blog.findUnique({ where: { id }, include: { category: true } });
+            const blog = await this.prisma.blog.findUnique({ where: { id } });
             if (!blog) throw new NotFoundException('Blog not found');
             return blog;
         } catch (error) {
@@ -2068,6 +2069,50 @@ export class AdminService {
 
 
     // ==== End of Blog management module =====
+
+
+    // Start of meta data management module
+
+    async getMeta() {
+        // findFirst because there should only be one record
+        const meta = await this.prisma.metaData.findFirst();
+        return meta;
+    }
+
+    /**
+     * Update a single field. If no record exists, create one with this field set.
+     * Option must be validated already by DTO.
+     */
+    async updateField(option: MetaField, value: string) {
+        if (!META_FIELDS.includes(option)) {
+            throw new BadRequestException('Invalid option');
+        }
+
+        // Try to find existing record
+        const existing = await this.prisma.metaData.findFirst();
+
+        if (!existing) {
+            // create a new record with the single field set
+            const createData: Record<string, any> = {};
+            createData[option] = value;
+            const created = await this.prisma.metaData.create({ data: createData });
+            return created;
+        }
+
+        // update only the provided field
+        const updateData: Record<string, any> = {};
+        updateData[option] = value;
+
+        const updated = await this.prisma.metaData.update({
+            where: { id: existing.id },
+            data: updateData,
+        });
+
+        return updated;
+    }
+
+    // End of meta data management module
+
 
 
 

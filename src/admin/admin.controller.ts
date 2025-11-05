@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Put, Query, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreateUserDto } from '../user/dto/create-user-dto';
@@ -12,6 +12,7 @@ import { CreateBlogDto } from '../user/dto/create-blog.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
+import { UpdateMetaDto } from './dto/update-meta.dto';
 
 
 @Controller('admin')
@@ -388,4 +389,22 @@ export class AdminController {
 
 
     // ==== End of Blog management module =====
+
+    // Start of meta data management module
+    @Get('fetch-meta-data')
+    async getMeta() {
+        const meta = await this.adminService.getMeta();
+        // return null if not found, or the record
+        return meta;
+    }
+
+    @Post('update-meta-data')
+    async updateMeta(@Body() body: UpdateMetaDto) {
+        // body.option and body.value validated by DTO
+        const updated = await this.adminService.updateField(body.option, body.value);
+        return updated;
+    }
+
+    // End of meta data management module
+
 }

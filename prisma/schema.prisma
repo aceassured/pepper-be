@@ -359,3 +359,18 @@ model Blog {
   seoDescription String? // Custom meta description for SEO
   seoKeywords    String? // Comma-separated keywords
 }
+
+// Store the meta data for the user panel
+model MetaData {
+  id             Int     @id @default(autoincrement())
+  home           String? @db.Text
+  knowOurPepper  String? @db.Text
+  articles       String? @db.Text
+  contactUs      String? @db.Text
+  trackOrder     String? @db.Text
+  bookYourPepper String? @db.Text
+  login          String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+}
