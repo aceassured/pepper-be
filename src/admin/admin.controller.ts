@@ -390,21 +390,18 @@ export class AdminController {
 
     // ==== End of Blog management module =====
 
-    // Start of meta data management module
+    //===== Start of meta data management module =====
     @Get('fetch-meta-data')
     async getMeta() {
-        const meta = await this.adminService.getMeta();
-        // return null if not found, or the record
-        return meta;
+        return await this.adminService.getMeta();
     }
 
     @Post('update-meta-data')
+    @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
     async updateMeta(@Body() body: UpdateMetaDto) {
-        // body.option and body.value validated by DTO
-        const updated = await this.adminService.updateField(body.option, body.value);
-        return updated;
+        return await this.adminService.updateField(body.option, body.value);
     }
 
-    // End of meta data management module
+    //==== End of meta data management module =====
 
 }

@@ -1,5 +1,12 @@
 // src/meta/dto/update-meta.dto.ts
-import { IsIn, IsString, IsNotEmpty } from 'class-validator';
+import {
+  IsIn,
+  IsString,
+  IsObject,
+  ValidateNested,
+  IsOptional,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export const META_FIELDS = [
   'home',
@@ -13,11 +20,30 @@ export const META_FIELDS = [
 
 export type MetaField = typeof META_FIELDS[number];
 
+class MetaValueDto {
+  @IsString()
+  title!: string;
+
+  @IsString()
+  description!: string; // line breaks and spaces preserved as-is
+
+  @IsOptional()
+  @IsString()
+  keywords!: string;
+
+  @IsOptional()
+  @IsString()
+  canonicalUrl!: string;
+}
+
 export class UpdateMetaDto {
-  @IsIn(META_FIELDS, { message: `option must be one of: ${META_FIELDS.join(', ')}` })
+  @IsIn(META_FIELDS, {
+    message: `option must be one of: ${META_FIELDS.join(', ')}`,
+  })
   option!: MetaField;
 
-  @IsString({ message: 'value must be a string' })
-  // intentionally no trim/transform — we want to preserve spacing exactly as sent
-  value!: string;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => MetaValueDto)
+  value!: MetaValueDto;
 }

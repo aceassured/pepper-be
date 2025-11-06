@@ -362,14 +362,14 @@ model Blog {
 
 // Store the meta data for the user panel
 model MetaData {
-  id             Int     @id @default(autoincrement())
-  home           String? @db.Text
-  knowOurPepper  String? @db.Text
-  articles       String? @db.Text
-  contactUs      String? @db.Text
-  trackOrder     String? @db.Text
-  bookYourPepper String? @db.Text
-  login          String? @db.Text
+  id             Int   @id @default(autoincrement())
+  home           Json?
+  knowOurPepper  Json?
+  articles       Json?
+  contactUs      Json?
+  trackOrder     Json?
+  bookYourPepper Json?
+  login          Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
