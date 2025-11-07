@@ -89,118 +89,203 @@ export class UserController {
         }
     }
 
-    @Get('fetch-dashboard-chart')
-    async getDashboardDetailsforChart(@Query('period') period: 'last6months' | 'last12months' = 'last6months') {
-        try {
-            // Validate period parameter
-            if (!['last6months', 'last12months'].includes(period)) {
-                throw new HttpException(
-                    {
-                        success: false,
-                        message: 'Invalid period parameter. Use: last6months or last12months'
-                    },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
+@Get('fetch-dashboard-chart')
+async getDashboardDetailsforChart(
+  @Query('period') period: 'last6months' | 'last12months' = 'last6months',
+  @Query('startDate') startDate?: string,
+  @Query('endDate') endDate?: string
+) {
+  try {
+    let data;
 
-            const data = await this.userService.getDashboardDetailsforGraph(period);
-            return {
-                success: true,
-                status: HttpStatus.OK,
-                message: `Revenue trend data for ${period} fetched successfully`,
-                data: data
-            };
-        } catch (error) {
-            throw new HttpException(
-                {
-                    success: false,
-                    message: 'Failed to fetch revenue trend data',
-                    error: error.message
-                },
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+    // ✅ If start and end date provided, use date range logic
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid date format. Use YYYY-MM-DD format.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      data = await this.userService.getDashboardChartByDateRange(start, end);
+    } else {
+      // ✅ Validate and use period
+      if (!['last6months', 'last12months'].includes(period)) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid period parameter. Use: last6months or last12months',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      data = await this.userService.getDashboardDetailsforChart(period);
     }
 
-    @Get('fetch-dashboard-graph')
-    async getDashboardDetailsforGraph(@Query('period') period: 'last6months' | 'last12months' = 'last6months') {
-        try {
-            // Validate period parameter
-            if (!['last6months', 'last12months'].includes(period)) {
-                throw new HttpException(
-                    {
-                        success: false,
-                        message: 'Invalid period parameter. Use: last6months or last12months'
-                    },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: startDate && endDate
+        ? `Chart data from ${startDate} to ${endDate} fetched successfully`
+        : `Chart data for ${period} fetched successfully`,
+      data,
+    };
+  } catch (error) {
+    throw new HttpException(
+      {
+        success: false,
+        message: 'Failed to fetch chart data',
+        error: error.message,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
 
-            const data = await this.userService.getDashboardDetailsforChart(period);
-            return {
-                success: true,
-                status: HttpStatus.OK,
-                message: `Monthly visitors data for ${period} fetched successfully`,
-                data: data
-            };
-        } catch (error) {
-            throw new HttpException(
-                {
-                    success: false,
-                    message: 'Failed to fetch monthly visitors data',
-                    error: error.message
-                },
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+
+@Get('fetch-dashboard-graph')
+async getDashboardDetailsforGraph(
+  @Query('period') period: 'last6months' | 'last12months' = 'last6months',
+  @Query('startDate') startDate?: string,
+  @Query('endDate') endDate?: string
+) {
+  try {
+    let data;
+
+    // ✅ If start and end date provided, use date range logic
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid date format. Use YYYY-MM-DD format.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      data = await this.userService.getDashboardGraphByDateRange(start, end);
+    } else {
+      // ✅ Validate and use period
+      if (!['last6months', 'last12months'].includes(period)) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid period parameter. Use: last6months or last12months',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      data = await this.userService.getDashboardDetailsforGraph(period);
     }
 
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: startDate && endDate
+        ? `Graph data from ${startDate} to ${endDate} fetched successfully`
+        : `Graph data for ${period} fetched successfully`,
+      data,
+    };
+  } catch (error) {
+    throw new HttpException(
+      {
+        success: false,
+        message: 'Failed to fetch graph data',
+        error: error.message,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
 
-    @Get('full-dashboard')
-    async getFullDashboard(
-        @Query('chartPeriod') chartPeriod: 'last6months' | 'last12months' = 'last6months',
-        @Query('graphPeriod') graphPeriod: 'last6months' | 'last12months' = 'last6months'
-    ) {
-        try {
-            // Validate period parameters
-            const validPeriods = ['last6months', 'last12months'];
-            if (!validPeriods.includes(chartPeriod) || !validPeriods.includes(graphPeriod)) {
-                throw new HttpException(
-                    {
-                        success: false,
-                        message: 'Invalid period parameters. Use: last6months or last12months'
-                    },
-                    HttpStatus.BAD_REQUEST
-                );
-            }
 
-            const [overview, monthlyVisitors, revenueTrend] = await Promise.all([
-                this.userService.getDashboardDetails(),
-                this.userService.getDashboardDetailsforChart(chartPeriod),
-                this.userService.getDashboardDetailsforGraph(graphPeriod)
-            ]);
 
-            return {
-                success: true,
-                status: HttpStatus.OK,
-                message: 'Full dashboard data fetched successfully',
-                data: {
-                    overview: overview,
-                    monthlyVisitors: monthlyVisitors,
-                    revenueTrend: revenueTrend
-                }
-            };
-        } catch (error) {
-            throw new HttpException(
-                {
-                    success: false,
-                    message: 'Failed to fetch full dashboard data',
-                    error: error.message
-                },
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+@Get('full-dashboard')
+async getFullDashboard(
+  @Query('chartPeriod') chartPeriod?: 'last6months' | 'last12months',
+  @Query('graphPeriod') graphPeriod?: 'last6months' | 'last12months',
+  @Query('startDate') startDate?: string,
+  @Query('endDate') endDate?: string
+) {
+  try {
+    // 1️⃣ Validate custom date range
+    let useCustomRange = false;
+    let start: Date | null = null;
+    let end: Date | null = null;
+
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid date format. Use ISO format (YYYY-MM-DD).',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      useCustomRange = true;
     }
+
+    // 2️⃣ Validate periods if date range not provided
+    const validPeriods = ['last6months', 'last12months'];
+    const chartPeriodFinal = validPeriods.includes(chartPeriod || '') ? chartPeriod : 'last6months';
+    const graphPeriodFinal = validPeriods.includes(graphPeriod || '') ? graphPeriod : 'last6months';
+
+    // 3️⃣ Call service methods accordingly
+    let overview, monthlyVisitors, revenueTrend;
+
+    if (useCustomRange && start && end) {
+      [overview, monthlyVisitors, revenueTrend] = await Promise.all([
+        this.userService.getDashboardDetailsByDateRange(start , end),
+        this.userService.getDashboardChartByDateRange(start, end),
+        this.userService.getDashboardGraphByDateRange(start, end),
+      ]);
+    } else {
+      [overview, monthlyVisitors, revenueTrend] = await Promise.all([
+        this.userService.getDashboardDetails(),
+        this.userService.getDashboardDetailsforChart(chartPeriodFinal),
+        this.userService.getDashboardDetailsforGraph(graphPeriodFinal),
+      ]);
+    }
+
+    // 4️⃣ Return unified response
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'Full dashboard data fetched successfully',
+      data: {
+        overview,
+        monthlyVisitors,
+        revenueTrend,
+        filterType: useCustomRange ? 'custom-date-range' : 'period',
+        ...(useCustomRange && { startDate, endDate }),
+      },
+    };
+  } catch (error) {
+    throw new HttpException(
+      {
+        success: false,
+        message: 'Failed to fetch full dashboard data',
+        error: error.message,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
 
     // Tesimonial module
 
