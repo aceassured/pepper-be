@@ -16,6 +16,8 @@ export const META_FIELDS = [
   'trackOrder',
   'bookYourPepper',
   'login',
+  'terms',
+  'privacyPolicy'
 ] as const;
 
 export type MetaField = typeof META_FIELDS[number];

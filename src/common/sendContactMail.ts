@@ -14,7 +14,7 @@ export const sendContactMail = async (contact: ContactDto) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px; border: 1px solid #e0e0e0; color: #1F2937;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkai Pepper" style="height: 60px;">
+          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkai Pepper" style="height: 60px;">
         </div>
         <h2 style="color: #111827; text-align: center;">New Contact Form Submission</h2>
         <p><strong>Name:</strong> ${name}</p>
@@ -37,7 +37,7 @@ export const sendContactMail = async (contact: ContactDto) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px; border: 1px solid #e0e0e0; color: #1F2937;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkai Pepper" style="height: 60px;">
+          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkai Pepper" style="height: 60px;">
         </div>
         <h2 style="color: #111827; text-align: center;">Thank You, ${name}!</h2>
         <p style="text-align: center;">We have received your message and our team will get back to you within 24–48 hours.</p>

@@ -46,7 +46,7 @@ export const sendCustomerOrderConfirmation = async (order: any) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ddd; border-radius: 8px; background: #ffffff;">
         <div style="text-align: center; background: #f9f9f9; padding: 20px; border-bottom: 1px solid #eee;">
-          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkal Pepper Nursery" style="width: 140px; margin-bottom: 10px;">
+          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkal Pepper Nursery" style="width: 140px; margin-bottom: 10px;">
           <h2 style="color: #222;">Thank You for Your Order!</h2>
           <p style="color: #555; font-size: 14px;">We’ve received your order and will begin processing it soon.</p>
         </div>

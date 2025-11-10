@@ -47,7 +47,7 @@ export const sendSummaryReport = async (summaryResponse: any) => {
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7fafc; padding:18px 20px;">
           <tr>
             <td width="70" valign="middle">
-              <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkal Pepper Nursery"
+              <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkal Pepper Nursery"
                    style="width:60px; height:60px; border-radius:6px; display:block; object-fit:cover;">
             </td>
             <td valign="middle" style="text-align:left;">

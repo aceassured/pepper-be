@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateMetaDto } from './dto/update-meta.dto';
+import { UpdatePolicyDto } from './dto/update-policy.dto';
 
 
 @Controller('admin')
@@ -403,5 +404,22 @@ export class AdminController {
     }
 
     //==== End of meta data management module =====
+
+
+    // ==== Start of Policy management module ====
+
+
+    @Get('fetch-policy')
+    async getPolicy() {
+        return this.adminService.getPolicy();
+    }
+
+    @Put('update-policy')
+    async updatePolicy(@Body() updateDto: UpdatePolicyDto) {
+        return this.adminService.updatePolicy(updateDto);
+    }
+
+    // ==== End of Policy management module ====
+
 
 }

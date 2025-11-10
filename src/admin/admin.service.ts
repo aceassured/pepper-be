@@ -20,6 +20,7 @@ import { CreateBlogDto } from '../user/dto/create-blog.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { META_FIELDS, MetaField } from './dto/update-meta.dto';
+import { UpdatePolicyDto } from './dto/update-policy.dto';
 
 
 @Injectable()
@@ -2100,7 +2101,37 @@ export class AdminService {
         });
     }
 
-    // End of meta data management module
+    // ==== End of meta data management module =====
+
+
+    // ==== Start of Policy management module ====
+
+    async getPolicy() {
+        const policy = await this.prisma.policyContent.findFirst();
+        if (!policy) {
+            // Create one by default if not exists
+            return this.prisma.policyContent.create({ data: {} });
+        }
+        return policy;
+    }
+
+    async updatePolicy(updateDto: UpdatePolicyDto) {
+        const existing = await this.prisma.policyContent.findFirst();
+        if (!existing) {
+            // create the row if it doesn't exist yet
+            return this.prisma.policyContent.create({ data: updateDto });
+        }
+
+        return this.prisma.policyContent.update({
+            where: { id: existing.id },
+            data: updateDto,
+        });
+    }
+
+    // ==== End of Policy management module ====
+
+
+
 
 
 

@@ -31,7 +31,7 @@ export const sendRefundRequestEmail = async (refundRequest) => {
     html: `
   <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6; background-color:#f9fafb;">
     <div style="padding: 20px; text-align: center;">
-      <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1759910577/div_exyjwr.png" alt="Kumbukkal Pepper" style="max-width: 200px;"/>
+      <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkal Pepper" style="max-width: 200px;"/>
       <h2 style="margin: 20px 0 10px; color:#4b0082;">Refund Request Raised</h2>
       <p style="margin: 0; font-size: 14px; color: #555;">A user has raised a refund request. Please review the details below.</p>
     </div>
