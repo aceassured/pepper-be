@@ -453,10 +453,15 @@ export class UserService {
         }
     }
 
-    async getDashboardDetailsforChart(period: 'last6months' | 'last12months' = 'last6months') {
+    async getDashboardDetailsforChart(period: 'last6months' | 'last12months' | 'last3months' = 'last6months') {
         try {
             const today = new Date();
-            const months = period === 'last6months' ? 6 : 12;
+            const months =
+                period === 'last3months'
+                    ? 3
+                    : period === 'last6months'
+                        ? 6
+                        : 12;
 
             // Generate array of months
             interface MonthData {
@@ -517,10 +522,16 @@ export class UserService {
         }
     }
 
-    async getDashboardDetailsforGraph(period: 'last6months' | 'last12months' = 'last6months') {
+    async getDashboardDetailsforGraph(period: 'last6months' | 'last12months' | 'last3months' = 'last6months') {
         try {
             const today = new Date();
-            const months = period === 'last6months' ? 6 : 12;
+            const months =
+                period === 'last3months'
+                    ? 3
+                    : period === 'last6months'
+                        ? 6
+                        : 12;
+
 
             // Generate array of months
 
@@ -613,173 +624,173 @@ export class UserService {
 
 
     // ======================= DATE RANGE BASED DASHBOARD =======================
-async getDashboardDetailsByDateRange(start: Date, end: Date) {
-    try {
-        // ============= TOTAL VISITORS =============
-        const visitorsCount = await this.prisma.user.count({
-            where: {
-                createdAt: {
-                    gte: start,
-                    lte: end
+    async getDashboardDetailsByDateRange(start: Date, end: Date) {
+        try {
+            // ============= TOTAL VISITORS =============
+            const visitorsCount = await this.prisma.user.count({
+                where: {
+                    createdAt: {
+                        gte: start,
+                        lte: end
+                    }
                 }
-            }
-        });
+            });
 
-        // ============= TOTAL ORDERS =============
-        const ordersCount = await this.prisma.order.count({
-            where: {
-                createdAt: {
-                    gte: start,
-                    lte: end
+            // ============= TOTAL ORDERS =============
+            const ordersCount = await this.prisma.order.count({
+                where: {
+                    createdAt: {
+                        gte: start,
+                        lte: end
+                    }
                 }
-            }
-        });
+            });
 
-        // ============= TOTAL REVENUE =============
-        const revenueData = await this.prisma.payment.aggregate({
-            _sum: {
-                amountInPaise: true
-            },
-            where: {
-                status: "CAPTURED",
-                createdAt: {
-                    gte: start,
-                    lte: end
+            // ============= TOTAL REVENUE =============
+            const revenueData = await this.prisma.payment.aggregate({
+                _sum: {
+                    amountInPaise: true
+                },
+                where: {
+                    status: "CAPTURED",
+                    createdAt: {
+                        gte: start,
+                        lte: end
+                    }
                 }
-            }
-        });
+            });
 
-        const totalRevenueInRupees = (revenueData._sum.amountInPaise || 0) / 100;
+            const totalRevenueInRupees = (revenueData._sum.amountInPaise || 0) / 100;
 
-        // ============= PENDING PAYMENTS =============
-        const pendingData = await this.prisma.order.aggregate({
-            _sum: {
-                totalAmountInPaise: true
-            },
-            where: {
-                status: "PENDING",
-                createdAt: {
-                    gte: start,
-                    lte: end
+            // ============= PENDING PAYMENTS =============
+            const pendingData = await this.prisma.order.aggregate({
+                _sum: {
+                    totalAmountInPaise: true
+                },
+                where: {
+                    status: "PENDING",
+                    createdAt: {
+                        gte: start,
+                        lte: end
+                    }
                 }
-            }
-        });
+            });
 
-        const pendingPayments = (pendingData._sum.totalAmountInPaise || 0) / 100;
+            const pendingPayments = (pendingData._sum.totalAmountInPaise || 0) / 100;
 
-        return {
-            totalVisitors: {
-                count: visitorsCount,
-                label: "Total Visitors",
-                period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
-            },
-            totalOrders: {
-                count: ordersCount,
-                label: "Total Orders",
-                period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
-            },
-            totalRevenue: {
-                count: Math.round(totalRevenueInRupees),
-                formatted: `₹${Math.round(totalRevenueInRupees).toLocaleString('en-IN')}`,
-                label: "Total Revenue",
-                period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
-            },
-            pendingPayments: {
-                count: Math.round(pendingPayments),
-                formatted: `₹${Math.round(pendingPayments).toLocaleString('en-IN')}`,
-                label: "Pending Payments",
-                period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
-            }
-        };
-    } catch (error) {
-        catchBlock(error);
-    }
-}
-
-// ======================= DATE RANGE CHART DATA =======================
-async getDashboardChartByDateRange(start: Date, end: Date) {
-    try {
-        const monthlyVisitorsData = await this.prisma.user.findMany({
-            where: {
-                createdAt: {
-                    gte: start,
-                    lte: end
+            return {
+                totalVisitors: {
+                    count: visitorsCount,
+                    label: "Total Visitors",
+                    period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
+                },
+                totalOrders: {
+                    count: ordersCount,
+                    label: "Total Orders",
+                    period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
+                },
+                totalRevenue: {
+                    count: Math.round(totalRevenueInRupees),
+                    formatted: `₹${Math.round(totalRevenueInRupees).toLocaleString('en-IN')}`,
+                    label: "Total Revenue",
+                    period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
+                },
+                pendingPayments: {
+                    count: Math.round(pendingPayments),
+                    formatted: `₹${Math.round(pendingPayments).toLocaleString('en-IN')}`,
+                    label: "Pending Payments",
+                    period: `From ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`
                 }
-            },
-            select: { createdAt: true }
-        });
-
-        // Group by month
-        const grouped = {};
-        for (const user of monthlyVisitorsData) {
-            const month = user.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-            grouped[month] = (grouped[month] || 0) + 1;
+            };
+        } catch (error) {
+            catchBlock(error);
         }
-
-        const chartData = Object.keys(grouped).map((month) => ({
-            name: month,
-            value: grouped[month]
-        }));
-
-        const totalVisitors = chartData.reduce((sum, d) => sum + d.value, 0);
-
-        return {
-            period: 'custom-date-range',
-            monthlyVisitors: chartData,
-            total: totalVisitors,
-            chartData
-        };
-    } catch (error) {
-        catchBlock(error);
     }
-}
 
-// ======================= DATE RANGE GRAPH DATA =======================
-async getDashboardGraphByDateRange(start: Date, end: Date) {
-    try {
-        const paymentData = await this.prisma.payment.findMany({
-            where: {
-                status: "CAPTURED",
-                createdAt: {
-                    gte: start,
-                    lte: end
-                }
-            },
-            select: { amountInPaise: true, createdAt: true }
-        });
+    // ======================= DATE RANGE CHART DATA =======================
+    async getDashboardChartByDateRange(start: Date, end: Date) {
+        try {
+            const monthlyVisitorsData = await this.prisma.user.findMany({
+                where: {
+                    createdAt: {
+                        gte: start,
+                        lte: end
+                    }
+                },
+                select: { createdAt: true }
+            });
 
-        // Group revenue by month
-        const grouped = {};
-        for (const p of paymentData) {
-            const month = p.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-            grouped[month] = (grouped[month] || 0) + (p.amountInPaise || 0) / 100;
+            // Group by month
+            const grouped = {};
+            for (const user of monthlyVisitorsData) {
+                const month = user.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+                grouped[month] = (grouped[month] || 0) + 1;
+            }
+
+            const chartData = Object.keys(grouped).map((month) => ({
+                name: month,
+                value: grouped[month]
+            }));
+
+            const totalVisitors = chartData.reduce((sum, d) => sum + d.value, 0);
+
+            return {
+                period: 'custom-date-range',
+                monthlyVisitors: chartData,
+                total: totalVisitors,
+                chartData
+            };
+        } catch (error) {
+            catchBlock(error);
         }
-
-        const graphData = Object.keys(grouped).map((month) => ({
-            month,
-            revenue: Math.round(grouped[month]),
-            formatted: `₹${Math.round(grouped[month]).toLocaleString('en-IN')}`
-        }));
-
-        const totalRevenue = graphData.reduce((sum, d) => sum + d.revenue, 0);
-        const peakRevenueData = graphData.reduce((max, d) => (d.revenue > max.revenue ? d : max), graphData[0]);
-
-        return {
-            period: 'custom-date-range',
-            revenueTrend: graphData,
-            summary: {
-                totalRevenue,
-                totalRevenueFormatted: `₹${totalRevenue.toLocaleString('en-IN')}`,
-                peakRevenue: peakRevenueData?.revenue || 0,
-                peakRevenueFormatted: peakRevenueData?.formatted || '₹0',
-                peakRevenueMonth: peakRevenueData?.month || '-'
-            },
-            chartData: graphData
-        };
-    } catch (error) {
-        catchBlock(error);
     }
-}
+
+    // ======================= DATE RANGE GRAPH DATA =======================
+    async getDashboardGraphByDateRange(start: Date, end: Date) {
+        try {
+            const paymentData = await this.prisma.payment.findMany({
+                where: {
+                    status: "CAPTURED",
+                    createdAt: {
+                        gte: start,
+                        lte: end
+                    }
+                },
+                select: { amountInPaise: true, createdAt: true }
+            });
+
+            // Group revenue by month
+            const grouped = {};
+            for (const p of paymentData) {
+                const month = p.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+                grouped[month] = (grouped[month] || 0) + (p.amountInPaise || 0) / 100;
+            }
+
+            const graphData = Object.keys(grouped).map((month) => ({
+                month,
+                revenue: Math.round(grouped[month]),
+                formatted: `₹${Math.round(grouped[month]).toLocaleString('en-IN')}`
+            }));
+
+            const totalRevenue = graphData.reduce((sum, d) => sum + d.revenue, 0);
+            const peakRevenueData = graphData.reduce((max, d) => (d.revenue > max.revenue ? d : max), graphData[0]);
+
+            return {
+                period: 'custom-date-range',
+                revenueTrend: graphData,
+                summary: {
+                    totalRevenue,
+                    totalRevenueFormatted: `₹${totalRevenue.toLocaleString('en-IN')}`,
+                    peakRevenue: peakRevenueData?.revenue || 0,
+                    peakRevenueFormatted: peakRevenueData?.formatted || '₹0',
+                    peakRevenueMonth: peakRevenueData?.month || '-'
+                },
+                chartData: graphData
+            };
+        } catch (error) {
+            catchBlock(error);
+        }
+    }
 
 
 

@@ -91,7 +91,7 @@ export class UserController {
 
 @Get('fetch-dashboard-chart')
 async getDashboardDetailsforChart(
-  @Query('period') period: 'last6months' | 'last12months' = 'last6months',
+  @Query('period') period: 'last6months' | 'last12months' | 'last3months' = 'last6months',
   @Query('startDate') startDate?: string,
   @Query('endDate') endDate?: string
 ) {
@@ -116,7 +116,7 @@ async getDashboardDetailsforChart(
       data = await this.userService.getDashboardChartByDateRange(start, end);
     } else {
       // ✅ Validate and use period
-      if (!['last6months', 'last12months'].includes(period)) {
+      if (!['last6months', 'last12months', 'last3months'].includes(period)) {
         throw new HttpException(
           {
             success: false,
@@ -152,7 +152,7 @@ async getDashboardDetailsforChart(
 
 @Get('fetch-dashboard-graph')
 async getDashboardDetailsforGraph(
-  @Query('period') period: 'last6months' | 'last12months' = 'last6months',
+  @Query('period') period: 'last6months' | 'last12months' | 'last3months' = 'last6months',
   @Query('startDate') startDate?: string,
   @Query('endDate') endDate?: string
 ) {
@@ -177,7 +177,7 @@ async getDashboardDetailsforGraph(
       data = await this.userService.getDashboardGraphByDateRange(start, end);
     } else {
       // ✅ Validate and use period
-      if (!['last6months', 'last12months'].includes(period)) {
+      if (!['last6months', 'last12months', 'last3months'].includes(period)) {
         throw new HttpException(
           {
             success: false,
