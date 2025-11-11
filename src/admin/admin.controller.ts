@@ -378,8 +378,35 @@ export class AdminController {
     async updateBlog(
         @Param('id', ParseIntPipe) id: number,
         @UploadedFile() file: Express.Multer.File,
-        @Body() body: CreateBlogDto,
+        @Body() body: any,
     ) {
+
+        // ✅ Parse 'category' field
+        if (typeof body.category === 'string') {
+            try {
+                // handle both '["a","b"]' and "['a','b']"
+                body.category = JSON.parse(body.category.replace(/'/g, '"'));
+            } catch {
+                // fallback if parsing fails
+                body.category = body.category
+                    .replace(/[\[\]']+/g, '')
+                    .split(',')
+                    .map((item) => item.trim());
+            }
+        }
+
+        // ✅ Parse 'tags' field
+        if (typeof body.tags === 'string') {
+            try {
+                body.tags = JSON.parse(body.tags.replace(/'/g, '"'));
+            } catch {
+                body.tags = body.tags
+                    .replace(/[\[\]']+/g, '')
+                    .split(',')
+                    .map((item) => item.trim());
+            }
+        }
+
         return this.adminService.updateBlog(id, body, file);
     }
 
