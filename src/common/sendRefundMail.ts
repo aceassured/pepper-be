@@ -41,7 +41,7 @@ export const sendRefundRequestEmail = async (refundRequest) => {
       <p style="color:#111;"><strong style="color:#111;">Order ID:</strong> ${orderId}</p>
       <p style="color:#111;"><strong style="color:#111;">Product Name:</strong> ${productName}</p>
       <p style="color:#111;"><strong style="color:#111;">Quantity:</strong> ${quantity}</p>
-      <p style="color:#111;"><strong style="color:#111;">Total Amount:</strong> ₹${(totalAmountInPaise / 100).toLocaleString()}</p>
+      <p style="color:#111;"><strong style="color:#111;">Total Amount:</strong> ₹${(totalAmountInPaise).toLocaleString()}</p>
       <p style="color:#111;"><strong style="color:#111;">Payment Method:</strong> ${paymentMethod}</p>
       <p style="color:#111;"><strong style="color:#111;">Delivery Date:</strong> ${new Date(deliveryDate).toLocaleDateString()}</p>
       <p style="color:#111;"><strong style="color:#111;">Delivery Location:</strong> ${deliveryLocation}</p>

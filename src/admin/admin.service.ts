@@ -824,56 +824,65 @@ export class AdminService {
     //Fetch all the card details for payment dashboard
     async fetchPaymentDashboardCards(fromDate?: string, toDate?: string) {
         try {
-            let startDate: Date;
-            let endDate: Date;
+            let createdAtFilter: any = undefined;
 
+            // Apply date filter only if both dates are valid
             if (fromDate && toDate && !isNaN(Date.parse(fromDate)) && !isNaN(Date.parse(toDate))) {
-                startDate = new Date(fromDate);
+                const startDate = new Date(fromDate);
                 startDate.setHours(0, 0, 0, 0);
 
-                endDate = new Date(toDate);
+                const endDate = new Date(toDate);
                 endDate.setHours(23, 59, 59, 999);
-            } else {
-                const now = new Date();
-                startDate = new Date(new Date().setMonth(now.getMonth() - 1));
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date();
-                endDate.setHours(23, 59, 59, 999);
+
+                createdAtFilter = { gte: startDate, lte: endDate };
             }
 
-            const [completedOrders, pendingCount] = await Promise.all([
+            console.log(createdAtFilter)
+
+            const [completedOrders, pendingCount, refundedCount] = await Promise.all([
                 this.prisma.order.findMany({
                     where: {
                         status: 'PAID',
-                        createdAt: { gte: startDate, lte: endDate },
+                        ...(createdAtFilter && { createdAt: createdAtFilter }),
                     },
                     select: { totalAmountInPaise: true },
                 }),
                 this.prisma.order.count({
                     where: {
                         status: 'PENDING',
-                        createdAt: { gte: startDate, lte: endDate },
+                        ...(createdAtFilter && { createdAt: createdAtFilter }),
+                    },
+                }),
+                this.prisma.order.count({
+                    where: {
+                        status: { in: ['REFUNDED', 'CANCELLED'] },
+                        refundStatus: 'APPROVED',
+                        ...(createdAtFilter && { createdAt: createdAtFilter }),
                     },
                 }),
             ]);
 
             const totalRevenue = completedOrders.reduce(
                 (sum, o) => sum + o.totalAmountInPaise,
-                0,
+                0
             );
 
             const cards = [
                 { title: 'Total Revenue', amount: totalRevenue },
                 { title: 'Successful Payments', amount: completedOrders.length },
                 { title: 'Pending Payments', amount: pendingCount },
-                { title: 'Total Refunded', amount: 0 }, // placeholder
+                { title: 'Total Refunded', amount: refundedCount },
             ];
 
-            return { message: 'Showing all the payment dashboard cards', cards };
+            return {
+                message: 'Showing all the payment dashboard cards',
+                cards,
+            };
         } catch (error) {
             catchBlock(error);
         }
     }
+
 
     // Fetch all the payment transcation details
     async fetchAllPaymentTransactions(
@@ -1044,65 +1053,56 @@ export class AdminService {
     // Fetch cards data for refund dashboard
     async fetchRefundDashboardCards(fromDate?: string, toDate?: string) {
         try {
-            // Define date filter
-            let dateFilter: any = {};
-            if (fromDate && toDate) {
+            // ✅ Apply date filter only if valid from & to dates are provided
+            let refundDateFilter: any = undefined;
+
+            if (fromDate && toDate && !isNaN(Date.parse(fromDate)) && !isNaN(Date.parse(toDate))) {
                 const startDate = new Date(fromDate);
                 startDate.setHours(0, 0, 0, 0);
+
                 const endDate = new Date(toDate);
                 endDate.setHours(23, 59, 59, 999);
 
-                dateFilter = {
-                    gte: startDate,
-                    lte: endDate,
-                };
+                refundDateFilter = { gte: startDate, lte: endDate };
             }
 
             // Run all counts in parallel
             const [totalRequests, pendingRequests, approvedRequests, cancelledRequests] =
                 await Promise.all([
-                    // 1️⃣ Total refund requests (orders with REFUNDED status)
+                    // 1️⃣ Total refund requests
                     this.prisma.order.count({
                         where: {
                             status: 'REFUNDED',
-                            ...(dateFilter.gte && {
-                                refundRequestDate: dateFilter,
-                            }),
+                            ...(refundDateFilter && { refundRequestDate: refundDateFilter }),
                         },
                     }),
 
-                    // 2️⃣ Pending requests (REFUNDED orders without any refund record)
+                    // 2️⃣ Pending requests
                     this.prisma.order.count({
                         where: {
-                            status: 'REFUNDED',
+                            status: { in: ['REFUNDED', 'CANCELLED'] },
                             refundStatus: 'PENDING',
-                            ...(dateFilter.gte && {
-                                refundRequestDate: dateFilter,
-                            }),
+                            ...(refundDateFilter && { refundRequestDate: refundDateFilter }),
                         },
                     }),
 
-                    // 3️⃣ Approved / Processing / Success refunds (Refund exists with specific status)
+                    // 3️⃣ Approved requests
                     this.prisma.order.count({
                         where: {
-                            status: 'REFUNDED',
+                            status: { in: ['REFUNDED', 'CANCELLED'] },
                             refundStatus: 'APPROVED',
-                            ...(dateFilter.gte && {
-                                refundRequestDate: dateFilter,
-                            }),
+                            ...(refundDateFilter && { refundRequestDate: refundDateFilter }),
                         },
                     }),
 
-                    // 4️⃣ Cancelled refunds
+                    // 4️⃣ Cancelled requests
                     this.prisma.order.count({
                         where: {
-                            status: 'REFUNDED',
+                            status: { in: ['REFUNDED', 'CANCELLED'] },
                             refundStatus: 'CANCELLED',
-                            ...(dateFilter.gte && {
-                                refundRequestDate: dateFilter,
-                            }),
+                            ...(refundDateFilter && { refundRequestDate: refundDateFilter }),
                         },
-                    })
+                    }),
                 ]);
 
             //  Prepare dashboard cards
@@ -1137,6 +1137,7 @@ export class AdminService {
             catchBlock(error);
         }
     }
+
 
     // Fetch all the refund transcation details
     async fetchAllRefundRequests(

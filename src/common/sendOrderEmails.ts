@@ -21,7 +21,7 @@ export const sendAdminNewOrderEmail = async (order: any) => {
           <tr><td><strong>Phone:</strong></td><td>${order.phone}</td></tr>
           <tr><td><strong>Product:</strong></td><td>${order.productName}</td></tr>
           <tr><td><strong>Quantity:</strong></td><td>${order.quantity}</td></tr>
-          <tr><td><strong>Total Amount:</strong></td><td>₹${order.totalAmountInPaise / 100}</td></tr>
+          <tr><td><strong>Total Amount:</strong></td><td>₹${order.totalAmountInPaise}</td></tr>
           <tr><td><strong>Delivery Location:</strong></td><td>${order.deliveryLocation}</td></tr>
           <tr><td><strong>Delivery Address:</strong></td><td>${order.deliveryAddress}</td></tr>
           <tr><td><strong>Delivery Date:</strong></td><td>${new Date(order.deliveryDate).toLocaleDateString()}</td></tr>
@@ -57,7 +57,7 @@ export const sendCustomerOrderConfirmation = async (order: any) => {
             <tr><td><strong>Order ID:</strong></td><td>${order.orderId}</td></tr>
             <tr><td><strong>Product:</strong></td><td>${order.productName}</td></tr>
             <tr><td><strong>Quantity:</strong></td><td>${order.quantity}</td></tr>
-            <tr><td><strong>Total Amount:</strong></td><td>₹${order.totalAmountInPaise / 100}</td></tr>
+            <tr><td><strong>Total Amount:</strong></td><td>₹${order.totalAmountInPaise}</td></tr>
             <tr><td><strong>Delivery Location:</strong></td><td>${order.deliveryLocation}</td></tr>
             <tr><td><strong>Delivery Address:</strong></td><td>${order.deliveryAddress}</td></tr>
             <tr><td><strong>Delivery Date:</strong></td><td>${new Date(order.deliveryDate).toLocaleDateString()}</td></tr>

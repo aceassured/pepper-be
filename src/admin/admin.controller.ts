@@ -137,8 +137,8 @@ export class AdminController {
 
     //Fetch all the card details for payment dashboard
     @Get('get-payment-dashboard-cards')
-    async getPaymentDashboardCards() {
-        return this.adminService.fetchPaymentDashboardCards()
+    async getPaymentDashboardCards(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+        return this.adminService.fetchPaymentDashboardCards(fromDate, toDate)
     }
 
     // Fetch all the payment transcation details
