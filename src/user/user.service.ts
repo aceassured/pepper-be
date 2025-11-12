@@ -350,7 +350,7 @@ export class UserService {
             });
 
             const currentMonthRevenueInPaise = currentMonthRevenueData._sum.amountInPaise || 0;
-            const currentMonthRevenue = currentMonthRevenueInPaise / 100;
+            const currentMonthRevenue = currentMonthRevenueInPaise ;
 
             // Last month revenue
             const lastMonthRevenueData = await this.prisma.payment.aggregate({
@@ -367,7 +367,7 @@ export class UserService {
             });
 
             const lastMonthRevenueInPaise = lastMonthRevenueData._sum.amountInPaise || 0;
-            const lastMonthRevenue = lastMonthRevenueInPaise / 100;
+            const lastMonthRevenue = lastMonthRevenueInPaise ;
 
             const revenuePercentageChange = lastMonthRevenue > 0
                 ? Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
@@ -391,7 +391,7 @@ export class UserService {
             });
 
             const currentPendingInPaise = currentPendingPaymentsData._sum.totalAmountInPaise || 0;
-            const currentPendingPayments = currentPendingInPaise / 100;
+            const currentPendingPayments = currentPendingInPaise ;
 
             // Last month pending payments
             const lastPendingPaymentsData = await this.prisma.order.aggregate({
@@ -408,7 +408,7 @@ export class UserService {
             });
 
             const lastPendingInPaise = lastPendingPaymentsData._sum.totalAmountInPaise || 0;
-            const lastPendingPayments = lastPendingInPaise / 100;
+            const lastPendingPayments = lastPendingInPaise ;
 
             const pendingPercentageChange = lastPendingPayments > 0
                 ? Math.round(((currentPendingPayments - lastPendingPayments) / lastPendingPayments) * 100)
@@ -574,7 +574,7 @@ export class UserService {
                         }
                     });
 
-                    const revenueInRupees = (revenueData._sum.amountInPaise || 0) / 100;
+                    const revenueInRupees = (revenueData._sum.amountInPaise || 0) ;
 
                     return {
                         month: monthData.month,
@@ -660,7 +660,7 @@ export class UserService {
                 }
             });
 
-            const totalRevenueInRupees = (revenueData._sum.amountInPaise || 0) / 100;
+            const totalRevenueInRupees = (revenueData._sum.amountInPaise || 0);
 
             // ============= PENDING PAYMENTS =============
             const pendingData = await this.prisma.order.aggregate({
@@ -676,7 +676,7 @@ export class UserService {
                 }
             });
 
-            const pendingPayments = (pendingData._sum.totalAmountInPaise || 0) / 100;
+            const pendingPayments = (pendingData._sum.totalAmountInPaise || 0);
 
             return {
                 totalVisitors: {
@@ -763,7 +763,7 @@ export class UserService {
             const grouped = {};
             for (const p of paymentData) {
                 const month = p.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-                grouped[month] = (grouped[month] || 0) + (p.amountInPaise || 0) / 100;
+                grouped[month] = (grouped[month] || 0) + (p.amountInPaise || 0) ;
             }
 
             const graphData = Object.keys(grouped).map((month) => ({
