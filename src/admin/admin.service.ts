@@ -609,7 +609,7 @@ export class AdminService {
                 const startStr = new Date(startDate).toISOString().slice(0, 7); // e.g., "2025-11"
                 const endStr = new Date(endDate).toISOString().slice(0, 7);     // e.g., "2025-12"
 
-                where.deliveryDate = {
+                where.createdAt = {
                     gte: startStr,
                     lte: endStr,
                 };
