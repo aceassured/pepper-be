@@ -577,7 +577,7 @@ export class AdminService {
             const limit = 5;
             const skip = (page - 1) * limit;
 
-            // Build dynamic Prisma filter
+            // Base filter
             const where: any = { status: "PAID" };
 
             // Search filter (matches multiple fields)
@@ -603,14 +603,15 @@ export class AdminService {
                 };
             }
 
-            // Date range filter
+            // Date range filter — for deliveryDate stored as "YYYY-MM"
             if (startDate && endDate) {
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
+                // Convert to "YYYY-MM" strings for comparison
+                const startStr = new Date(startDate).toISOString().slice(0, 7); // e.g., "2025-11"
+                const endStr = new Date(endDate).toISOString().slice(0, 7);     // e.g., "2025-12"
+
                 where.deliveryDate = {
-                    gte: start,
-                    lte: end,
+                    gte: startStr,
+                    lte: endStr,
                 };
             }
 
@@ -627,7 +628,7 @@ export class AdminService {
                     take: limit,
                     orderBy: { createdAt: 'desc' },
                     include: {
-                        progressTracker: true, // keep your relation data
+                        progressTracker: true,
                     },
                 }),
                 this.prisma.order.count({ where }),
@@ -646,6 +647,7 @@ export class AdminService {
             catchBlock(error);
         }
     }
+
 
     // Delete order
     async deleteOrder(id: number) {

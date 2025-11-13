@@ -35,8 +35,8 @@ export const sendSummaryReport = async (summaryResponse: any) => {
     const end = new Date(data.endDate);
     const period = `${formatDateReadable(start)} – ${formatDateReadable(end)}`;
 
-    const formattedRevenue = formatPaiseToINR(data.totalRevenue);
-    const formattedPending = formatPaiseToINR(data.totalPendingRevenue);
+    // const formattedRevenue = formatPaiseToINR(data.totalRevenue);
+    // const formattedPending = formatPaiseToINR(data.totalPendingRevenue);
 
     const subject = `Kumbukkal Pepper Nursery - ${data.value} Summary Report (${period})`;
 
@@ -66,8 +66,8 @@ export const sendSummaryReport = async (summaryResponse: any) => {
           ${[
         { label: 'Visitors', value: data.totalVisitors, bg: '#fbfdff', color: '#0f172a' },
         { label: 'Orders', value: data.totalOrders, bg: '#fbfdff', color: '#0f172a' },
-        { label: 'Total Revenue', value: formattedRevenue, bg: '#fff8f0', color: '#92400e' },
-        { label: 'Pending Revenue', value: formattedPending, bg: '#fff8f0', color: '#92400e' },
+        { label: 'Total Revenue', value: data.totalRevenue, bg: '#fff8f0', color: '#92400e' },
+        { label: 'Pending Revenue', value: data.totalPendingRevenue, bg: '#fff8f0', color: '#92400e' },
       ]
         .map(
           (item) => `
@@ -92,8 +92,8 @@ export const sendSummaryReport = async (summaryResponse: any) => {
                 <tr><td style="padding:8px 0; color:#64748b;">Date Range</td><td style="padding:8px 0;"><strong>${period}</strong></td></tr>
                 <tr><td style="padding:8px 0; color:#64748b;">Total Visitors</td><td style="padding:8px 0;"><strong>${data.totalVisitors}</strong></td></tr>
                 <tr><td style="padding:8px 0; color:#64748b;">Total Orders</td><td style="padding:8px 0;"><strong>${data.totalOrders}</strong></td></tr>
-                <tr><td style="padding:8px 0; color:#64748b;">Total Revenue</td><td style="padding:8px 0;"><strong>${formattedRevenue}</strong></td></tr>
-                <tr><td style="padding:8px 0; color:#64748b;">Pending Revenue</td><td style="padding:8px 0;"><strong>${formattedPending}</strong></td></tr>
+                <tr><td style="padding:8px 0; color:#64748b;">Total Revenue</td><td style="padding:8px 0;"><strong>${data.totalRevenue}</strong></td></tr>
+                <tr><td style="padding:8px 0; color:#64748b;">Pending Revenue</td><td style="padding:8px 0;"><strong>${data.totalPendingRevenue}</strong></td></tr>
               </tbody>
             </table>
           </div>
