@@ -1254,7 +1254,7 @@ export class AdminService {
         if (order.refund) throw new BadRequestException('Refund already processed for this order');
         if (order.payment.status !== "CAPTURED") throw new BadRequestException('Payment not captured, cannot refund');
 
-        const amount = order.totalAmountInPaise;
+        const amount = order.totalAmountInPaise * 100; // Convert to paise
         if (!amount || amount <= 0) throw new BadRequestException('Invalid refund amount');
 
         try {
