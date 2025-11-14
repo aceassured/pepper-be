@@ -606,9 +606,12 @@ export class AdminService {
             // Date range filter — for deliveryDate stored as "YYYY-MM"
             if (startDate && endDate) {
                 // Convert to "YYYY-MM" strings for comparison
-                const startStr = new Date(startDate).toISOString().slice(0, 7); // e.g., "2025-11"
-                const endStr = new Date(endDate).toISOString().slice(0, 7);     // e.g., "2025-12"
+                const startStr = new Date(startDate)
 
+                startStr.setHours(0, 0, 0, 0)
+                const endStr = new Date(endDate)
+                endStr.setHours(23, 59, 59, 999)
+                
                 where.createdAt = {
                     gte: startStr,
                     lte: endStr,
