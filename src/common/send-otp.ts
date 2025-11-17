@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const sendOtpToUser = (email: string, otp: string) => {
   // 
   const options = {
-    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    from: "Kumbuckal Pepper Nursery <no-reply@kumbuckalpepper.com>",
     to: email,
     subject: 'OTP for Password Recovery',
     html: `

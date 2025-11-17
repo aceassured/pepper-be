@@ -38,7 +38,7 @@ export const sendSummaryReport = async (summaryResponse: any) => {
     // const formattedRevenue = formatPaiseToINR(data.totalRevenue);
     // const formattedPending = formatPaiseToINR(data.totalPendingRevenue);
 
-    const subject = `Kumbukkal Pepper Nursery - ${data.value} Summary Report (${period})`;
+    const subject = `Kumbuckal Pepper Nursery - ${data.value} Summary Report (${period})`;
 
     const html = `
       <div style="font-family: Arial, Helvetica, sans-serif; max-width: 760px; margin: 0 auto; border: 1px solid #e6e9ee; border-radius: 8px; overflow: hidden; background: #fff;">
@@ -47,11 +47,11 @@ export const sendSummaryReport = async (summaryResponse: any) => {
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7fafc; padding:18px 20px;">
           <tr>
             <td width="70" valign="middle">
-              <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkal Pepper Nursery"
+              <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbuckal Pepper Nursery"
                    style="width:60px; height:60px; border-radius:6px; display:block; object-fit:cover;">
             </td>
             <td valign="middle" style="text-align:left;">
-              <h2 style="margin:0; font-size:18px; color:#12263a;">Kumbukkal Pepper Nursery</h2>
+              <h2 style="margin:0; font-size:18px; color:#12263a;">Kumbuckal Pepper Nursery</h2>
               <p style="margin:4px 0 0; font-size:13px; color:#4a5568;">${data.value} Summary Report</p>
               <p style="margin:4px 0 0; font-size:12px; color:#718096;">Period: <strong style="color:#1f2937">${period}</strong></p>
             </td>
@@ -102,7 +102,7 @@ export const sendSummaryReport = async (summaryResponse: any) => {
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;">
             <tr>
               <td align="center">
-                <a href="https://kumbukkal-pepper-admin-fe.vercel.app/dashboard" style="display:inline-block; padding:10px 14px; background:#0f172a; color:#fff; text-decoration:none; border-radius:6px; font-size:13px;">Open Admin Dashboard</a>
+                <a href="https://adminkumbuckalpepper.com/dashboard" style="display:inline-block; padding:10px 14px; background:#0f172a; color:#fff; text-decoration:none; border-radius:6px; font-size:13px;">Open Admin Dashboard</a>
               </td>
             </tr>
             <tr>
@@ -115,15 +115,15 @@ export const sendSummaryReport = async (summaryResponse: any) => {
 
         <!-- Footer -->
         <div style="background:#f7fafc; padding:12px 18px; text-align:center; font-size:12px; color:#64748b;">
-          <div>Kumbukkal Pepper Nursery — World's Largest Pepper Nursery</div>
+          <div>Kumbuckal Pepper Nursery — World's Largest Pepper Nursery</div>
           <div style="margin-top:6px;">Contact: ${process.env.EMAIL_USER}</div>
         </div>
       </div>
     `;
 
     const mailOptions = {
-      from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
-      to: process.env.ADMIN_EMAIL || 'venkatatrinadh@aceassured.com',
+      from: "Kumbuckal Pepper Nursery <no-reply@kumbuckalpepper.com>",
+      to: process.env.ADMIN_EMAIL || 'devkumbukkalpepper@gmail.com',
       subject,
       html,
     };

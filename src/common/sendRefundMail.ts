@@ -25,8 +25,8 @@ export const sendRefundRequestEmail = async (refundRequest) => {
   } = refundRequest;
 
   const mailOptions = {
-    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
-    to: process.env.ADMIN_EMAIL || "venkatatrinadh@aceassured.com", // venkatatrinadh@aceassured.com
+    from: "Kumbukkal Pepper Nursery <no-reply@kumbukkalpepper.com>",
+    to: process.env.ADMIN_EMAIL || "devkumbukkalpepper@gmail.com",
     subject: `Refund Request Raised - Order ${orderId}`,
     html: `
   <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6; background-color:#f9fafb;">

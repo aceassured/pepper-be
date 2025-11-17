@@ -5,13 +5,13 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // 🌿 Send email to admin when a new order is placed
 export const sendAdminNewOrderEmail = async (order: any) => {
   const options = {
-    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
-    to: process.env.ADMIN_EMAIL || "venkatatrinadh@aceassured.com",
+    from: "Kumbuckal Pepper Nursery <support@kumbuckalpepper.com>",
+    to: process.env.ADMIN_EMAIL || "devkumbukkalpepper@gmail.com",
     subject: `🛒 New Order Received - ${order.orderId}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
         <h2 style="color: #333;">New Order Received</h2>
-        <p style="color: #555;">A new order has been placed on <strong>Kumbukkal Pepper Nursery</strong>.</p>
+        <p style="color: #555;">A new order has been placed on <strong>Kumbuckal Pepper Nursery</strong>.</p>
 
         <h3 style="color: #222; margin-top: 25px;">Order Details</h3>
         <table style="width:100%; border-collapse: collapse;">
@@ -40,13 +40,13 @@ export const sendAdminNewOrderEmail = async (order: any) => {
 // 🌿 Send confirmation email to the customer
 export const sendCustomerOrderConfirmation = async (order: any) => {
   const options = {
-    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    from: "Kumbuckal Pepper Nursery <support@kumbuckalpepper.com>",
     to: order.email,
     subject: `🌱 Thank You for Your Order - ${order.orderId}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ddd; border-radius: 8px; background: #ffffff;">
         <div style="text-align: center; background: #f9f9f9; padding: 20px; border-bottom: 1px solid #eee;">
-          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkal Pepper Nursery" style="width: 140px; margin-bottom: 10px;">
+          <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbuckal Pepper Nursery" style="width: 140px; margin-bottom: 10px;">
           <h2 style="color: #222;">Thank You for Your Order!</h2>
           <p style="color: #555; font-size: 14px;">We’ve received your order and will begin processing it soon.</p>
         </div>
@@ -72,7 +72,7 @@ export const sendCustomerOrderConfirmation = async (order: any) => {
 
         <div style="background: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #777;">
-            Thank you for choosing <strong>Kumbukkal Pepper Nursery</strong> — World's Largest Pepper Nursery.
+            Thank you for choosing <strong>Kumbuckal Pepper Nursery</strong> — World's Largest Pepper Nursery.
           </p>
         </div>
       </div>

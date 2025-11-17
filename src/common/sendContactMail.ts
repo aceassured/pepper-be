@@ -8,8 +8,8 @@ export const sendContactMail = async (contact: ContactDto) => {
 
   // Admin Email
   const adminOptions = {
-    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
-    to: process.env.ADMIN_EMAIL || "venkatatrinadh@aceassured.com",
+    from: "Kumbuckal Pepper Nursery <no-reply@kumbuckalpepper.com>",
+    to: process.env.ADMIN_EMAIL || "devkumbukkalpepper@gmail.com",
     subject: 'New Contact Form Submission',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px; border: 1px solid #e0e0e0; color: #1F2937;">
@@ -31,7 +31,7 @@ export const sendContactMail = async (contact: ContactDto) => {
 
   // User Thank You Email
   const userOptions = {
-    from: "Kumbukkal Pepper Nursery <onboarding@resend.dev>",
+    from: "Kumbuckal Pepper Nursery <no-reply@kumbuckalpepper.com>",
     to: email,
     subject: 'Thank You for Contacting Kumbukkai Pepper',
     html: `
