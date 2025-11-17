@@ -82,7 +82,7 @@ model Order {
   orderId String? @unique
 
   // product / order summary
-  productName         String? @default("Kumbukkal Selection Black Pepper Saplings")
+  productName         String? @default("Kumbuckal Selection Black Pepper Saplings")
   productId           Int?    @default(1)
   deliveryDate        String?
   deliveryLocation    String? @default("Kerala, Kottayam District")

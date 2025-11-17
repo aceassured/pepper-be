@@ -25,13 +25,13 @@ export const sendRefundRequestEmail = async (refundRequest) => {
   } = refundRequest;
 
   const mailOptions = {
-    from: "Kumbukkal Pepper Nursery <no-reply@kumbukkalpepper.com>",
+    from: "Kumbuckal Pepper Nursery <no-reply@kumbuckalpepper.com>",
     to: process.env.ADMIN_EMAIL || "devkumbukkalpepper@gmail.com",
     subject: `Refund Request Raised - Order ${orderId}`,
     html: `
   <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6; background-color:#f9fafb;">
     <div style="padding: 20px; text-align: center;">
-      <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbukkal Pepper" style="max-width: 200px;"/>
+      <img src="https://res.cloudinary.com/dxzynb5wu/image/upload/v1762773774/K_p_favicon_otfe0b.png" alt="Kumbuckal Pepper" style="max-width: 200px;"/>
       <h2 style="margin: 20px 0 10px; color:#4b0082;">Refund Request Raised</h2>
       <p style="margin: 0; font-size: 14px; color: #555;">A user has raised a refund request. Please review the details below.</p>
     </div>
@@ -60,7 +60,7 @@ export const sendRefundRequestEmail = async (refundRequest) => {
     </div>
 
     <div style="text-align: center; padding: 20px; font-size: 12px; color: #777;">
-      <p>© 2025 Kumbukkal Pepper Nursery. All rights reserved.</p>
+      <p>© 2025 Kumbuckal Pepper Nursery. All rights reserved.</p>
       <p>Trusted by farmers across India | Safe Delivery | Expert Support</p>
     </div>
   </div>
