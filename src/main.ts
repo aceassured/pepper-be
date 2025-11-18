@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: ["http://localhost:5173", "http://localhost:3000", "https://kumbukkal-pepper-admin-fe.vercel.app", "https://kumbukkal-pepper-fe.vercel.app","https://kumbuckalpepper.vercel.app","https://adminkumbuckalpepper.vercel.app"]
+    origin: ["http://localhost:5173", "http://localhost:3000", "https://kumbukkal-pepper-admin-fe.vercel.app", "https://kumbukkal-pepper-fe.vercel.app","https://kumbuckalpepper.vercel.app","https://adminkumbuckalpepper.vercel.app","https://www.kumbuckalpepper.com","https://admin.kumbuckalpepper.com"]
   })
 
   app.useGlobalPipes(new ValidationPipe({
