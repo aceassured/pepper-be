@@ -76,16 +76,7 @@ export class UserService {
             if (!isPasswordValid)
                 throw new UnauthorizedException('Invalid credentials');
 
-            const payload = { id: user.id, email: user.email };
-            const token = await this.jwt.signAsync(payload);
-
-            const loginDetails = {
-                ...user,
-                isAdmin: false,
-                token
-            }
-
-            return { message: 'Login successfull', user: loginDetails }
+            return this.buildLoginResponse(user);
         } catch (error) {
             catchBlock(error)
         }
@@ -178,6 +169,69 @@ export class UserService {
             catchBlock(error);
         }
     }
+
+    // API to handle Google OAuth login
+    // called by GoogleStrategy
+    async buildLoginResponse(user: any) {
+        try {
+            const payload = { id: user.id, email: user.email };
+            const token = await this.jwt.signAsync(payload);
+
+            return {
+                message: "Login successfull",
+                user: {
+                    ...user,
+                    isAdmin: false,
+                    token
+                }
+            };
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async validateOAuthLogin({ provider, providerId, email, name}) {
+        // 1) try find OAuth account
+        const account = await this.prisma.oAuthAccount.findUnique({
+            where: { provider_providerId: { provider, providerId } },
+            include: { user: true }
+        });
+
+        if (account) {
+            return {
+                id: account.user.id,
+                email: account.user.email,
+                name: account.user.name,
+                phone: account.user.phone,
+                createdAt: account.user.createdAt
+            };
+        }
+
+        // 2) find or create user by email
+        let user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            user = await this.prisma.user.create({
+                data: { email, name },
+            });
+        }
+
+        // 3) create OAuthAccount
+        await this.prisma.oAuthAccount.create({
+            data: { provider, providerId, userId: user.id },
+        });
+
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phone,
+            createdAt: user.createdAt
+        };
+    }
+
 
     // 🔹 Contact Form Handler
     async contact(dto: ContactDto) {
@@ -350,7 +404,7 @@ export class UserService {
             });
 
             const currentMonthRevenueInPaise = currentMonthRevenueData._sum.amountInPaise || 0;
-            const currentMonthRevenue = currentMonthRevenueInPaise ;
+            const currentMonthRevenue = currentMonthRevenueInPaise;
 
             // Last month revenue
             const lastMonthRevenueData = await this.prisma.payment.aggregate({
@@ -367,7 +421,7 @@ export class UserService {
             });
 
             const lastMonthRevenueInPaise = lastMonthRevenueData._sum.amountInPaise || 0;
-            const lastMonthRevenue = lastMonthRevenueInPaise ;
+            const lastMonthRevenue = lastMonthRevenueInPaise;
 
             const revenuePercentageChange = lastMonthRevenue > 0
                 ? Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
@@ -391,7 +445,7 @@ export class UserService {
             });
 
             const currentPendingInPaise = currentPendingPaymentsData._sum.totalAmountInPaise || 0;
-            const currentPendingPayments = currentPendingInPaise ;
+            const currentPendingPayments = currentPendingInPaise;
 
             // Last month pending payments
             const lastPendingPaymentsData = await this.prisma.order.aggregate({
@@ -408,7 +462,7 @@ export class UserService {
             });
 
             const lastPendingInPaise = lastPendingPaymentsData._sum.totalAmountInPaise || 0;
-            const lastPendingPayments = lastPendingInPaise ;
+            const lastPendingPayments = lastPendingInPaise;
 
             const pendingPercentageChange = lastPendingPayments > 0
                 ? Math.round(((currentPendingPayments - lastPendingPayments) / lastPendingPayments) * 100)
@@ -574,7 +628,7 @@ export class UserService {
                         }
                     });
 
-                    const revenueInRupees = (revenueData._sum.amountInPaise || 0) ;
+                    const revenueInRupees = (revenueData._sum.amountInPaise || 0);
 
                     return {
                         month: monthData.month,
@@ -763,7 +817,7 @@ export class UserService {
             const grouped = {};
             for (const p of paymentData) {
                 const month = p.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-                grouped[month] = (grouped[month] || 0) + (p.amountInPaise || 0) ;
+                grouped[month] = (grouped[month] || 0) + (p.amountInPaise || 0);
             }
 
             const graphData = Object.keys(grouped).map((month) => ({

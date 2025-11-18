@@ -23,14 +23,35 @@ export class OrdersService {
     }
 
     // Create order + Razorpay order
-    async createOrder(userId: number, dto: CreateOrderDto) {
+    async createOrder(userId: number | null, dto: CreateOrderDto) {
         try {
+
+            if (!userId) {
+                const user = await this.prisma.user.findFirst({
+                    where: { email: dto.email }
+                })
+                if (user) {
+                    userId = user.id;
+                }
+                else {
+                    const newUser = await this.prisma.user.create({
+                        data: {
+                            email: dto.email,
+                            name: dto.fullName,
+                            phone: dto.phone,
+                            whatsapp: dto?.whatsapp,
+                            password: "Password@123"
+                        }
+                    });
+                    userId = newUser.id;
+                }
+            }
+
             const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
 
             const totalAmountInRupees = Number(dto.pricePerUnitInPaise) * Number(dto.quantity);
 
             const selectedMonth = new Date(dto.deliveryDate).toISOString().slice(0, 7);
-            console.log(selectedMonth)
 
             const record = await this.prisma.inventory.findFirst({ where: { month: selectedMonth } });
             if (!record) throw new NotFoundException('Inventory not found for this month');
@@ -179,11 +200,13 @@ export class OrdersService {
         try {
             const orders = await this.prisma.order.findMany({
                 where: {
-                    AND:[
+                    AND: [
                         { user: { id: userId } },
-                        { status: {
-                            in : ['PAID', 'CANCELLED', 'REFUNDED']
-                        }}
+                        {
+                            status: {
+                                in: ['PAID', 'CANCELLED', 'REFUNDED']
+                            }
+                        }
                     ]
                 },
                 include: { payment: true, progressTracker: true, refund: true },

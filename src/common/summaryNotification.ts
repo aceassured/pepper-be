@@ -102,7 +102,7 @@ export const sendSummaryReport = async (summaryResponse: any) => {
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;">
             <tr>
               <td align="center">
-                <a href="https://adminkumbuckalpepper.com/dashboard" style="display:inline-block; padding:10px 14px; background:#0f172a; color:#fff; text-decoration:none; border-radius:6px; font-size:13px;">Open Admin Dashboard</a>
+                <a href="https://admin.kumbuckalpepper.com/dashboard" style="display:inline-block; padding:10px 14px; background:#0f172a; color:#fff; text-decoration:none; border-radius:6px; font-size:13px;">Open Admin Dashboard</a>
               </td>
             </tr>
             <tr>

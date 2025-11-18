@@ -1,5 +1,5 @@
 // src/orders/orders.controller.ts
-import { Controller, Post, Body, Get, Param, Req, Res, HttpStatus, ParseIntPipe, Put, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, Res, HttpStatus, ParseIntPipe, Put, UseInterceptors, UploadedFiles, BadRequestException, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import * as crypto from 'crypto';
@@ -11,10 +11,14 @@ import { RefundRequestDto } from './dto/refund-request.dto';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) { }
 
-  @Post(':userId')
-  createOrder(@Param('userId', ParseIntPipe) userId: number, @Body() dto: CreateOrderDto) {
-    return this.ordersService.createOrder(Number(userId), dto);
+  @Post()
+  createOrder(
+    @Body() dto: CreateOrderDto,
+    @Query('userId') userId?: number
+  ) {
+    return this.ordersService.createOrder(userId ?? null, dto);
   }
+
 
   @Get(':userId')
   getUserOrders(@Param('userId') userId: string) {
