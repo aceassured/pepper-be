@@ -21,6 +21,7 @@ import { CreateTagDto } from './dto/create-tag.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { META_FIELDS, MetaField } from './dto/update-meta.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
+import { UpdateContactDetailsDto } from './dto/create-contact-info.dto';
 
 
 @Injectable()
@@ -611,7 +612,7 @@ export class AdminService {
                 startStr.setHours(0, 0, 0, 0)
                 const endStr = new Date(endDate)
                 endStr.setHours(23, 59, 59, 999)
-                
+
                 where.createdAt = {
                     gte: startStr,
                     lte: endStr,
@@ -2085,26 +2086,39 @@ export class AdminService {
         return meta;
     }
 
-    async updateField(option: MetaField, value: any) {
-        if (!META_FIELDS.includes(option)) {
-            throw new BadRequestException('Invalid option');
+    async updateField(option: MetaField, value: any, image?: Express.Multer.File) {
+        try {
+            if (!META_FIELDS.includes(option)) {
+                throw new BadRequestException('Invalid option');
+            }
+
+            // 1. Upload file if provided
+            if (image) {
+                const uploaded = await put(`meta/${Date.now()}-${image.originalname}`, image.buffer, {
+                    access: 'public',
+                });
+
+                value.imageUrl = uploaded.url; // attach image URL
+            }
+
+            const existing = await this.prisma.metaData.findFirst();
+
+            if (!existing) {
+                const createData: Record<string, any> = {};
+                createData[option] = value;
+                return await this.prisma.metaData.create({ data: createData });
+            }
+
+            const updateData: Record<string, any> = {};
+            updateData[option] = JSON.parse(JSON.stringify(value));
+
+            return await this.prisma.metaData.update({
+                where: { id: existing.id },
+                data: updateData,
+            });
+        } catch (error) {
+            catchBlock(error)
         }
-
-        const existing = await this.prisma.metaData.findFirst();
-
-        if (!existing) {
-            const createData: Record<string, any> = {};
-            createData[option] = value;
-            return await this.prisma.metaData.create({ data: createData });
-        }
-
-        const updateData: Record<string, any> = {};
-        updateData[option] = JSON.parse(JSON.stringify(value));
-
-        return await this.prisma.metaData.update({
-            where: { id: existing.id },
-            data: updateData,
-        });
     }
 
     // ==== End of meta data management module =====
@@ -2136,10 +2150,41 @@ export class AdminService {
 
     // ==== End of Policy management module ====
 
+    // ==== Start of Contact management module ====
 
+    async upsertSingleField(dto: UpdateContactDetailsDto) {
+        try {
 
+            const existing = await this.prisma.contactDetails.findFirst();
 
+            if (existing) {
+                // Update only the provided field
+                return this.prisma.contactDetails.update({
+                    where: { id: existing.id },
+                    data: { ...dto },
+                });
+            }
 
+            // Create new record with only that field
+            const updatedDetails = await this.prisma.contactDetails.create({
+                data: { ...dto },
+            });
+            return { message: 'Contact details updated successfully', data: updatedDetails }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
 
+    async getDetails() {
+        try {
+            const details = await this.prisma.contactDetails.findFirst();
+            return {
+                message: 'Contact details fetched successfully', data: details
+            }
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+    // ==== End of Contact management module ====
 
 }

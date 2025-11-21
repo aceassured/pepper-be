@@ -1,4 +1,3 @@
-// src/meta/dto/update-meta.dto.ts
 import {
   IsIn,
   IsString,
@@ -27,7 +26,7 @@ class MetaValueDto {
   title!: string;
 
   @IsString()
-  description!: string; // line breaks and spaces preserved as-is
+  description!: string;
 
   @IsOptional()
   @IsString()
@@ -36,6 +35,11 @@ class MetaValueDto {
   @IsOptional()
   @IsString()
   canonicalUrl!: string;
+
+  // NEW — mandatory after upload
+  @IsOptional()
+  @IsString()
+  imageUrl!: string;
 }
 
 export class UpdateMetaDto {

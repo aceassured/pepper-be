@@ -14,6 +14,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateMetaDto } from './dto/update-meta.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
+import { UpdateContactDetailsDto } from './dto/create-contact-info.dto';
 
 
 @Controller('admin')
@@ -425,11 +426,15 @@ export class AdminController {
     }
 
     @Post('update-meta-data')
+    @UseInterceptors(FileInterceptor('image'))
     @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-    async updateMeta(@Body() body: UpdateMetaDto) {
-        return await this.adminService.updateField(body.option, body.value);
+    async updateMeta(
+        @Body() body: UpdateMetaDto,
+        @UploadedFile() image: Express.Multer.File,
+    ) {
+        return await this.adminService.updateField(body.option, body.value, image);
     }
-
+    
     //==== End of meta data management module =====
 
 
@@ -447,6 +452,22 @@ export class AdminController {
     }
 
     // ==== End of Policy management module ====
+
+
+    // ==== Start of Contact management module ====
+
+    @Put('update-contact-details')
+    updateSingleField(@Body() dto: UpdateContactDetailsDto) {
+        return this.adminService.upsertSingleField(dto);
+    }
+
+    @Get('fetch-contact-details')
+    getDetails() {
+        return this.adminService.getDetails();
+    }
+
+
+    // ==== End of Contact management module ====
 
 
 }

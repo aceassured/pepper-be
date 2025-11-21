@@ -31,17 +31,17 @@ model User {
   orders   Order[]
   payments Payment[]
   callBack CallBack[]
-  accounts  OAuthAccount[]
+  accounts OAuthAccount[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model OAuthAccount {
-  id         Int    @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   provider   String
   providerId String
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     Int
   createdAt  DateTime @default(now())
 
@@ -392,9 +392,22 @@ model MetaData {
 // Storing the policy content
 
 model PolicyContent {
-  id              Int      @id @default(autoincrement())
-  terms           String?  @db.Text
-  privacyPolicy   String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  terms         String?  @db.Text
+  privacyPolicy String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Store contact details for admin panel
+model ContactDetails {
+  id        Int      @id @default(autoincrement())
+  email     String?
+  phone     String?
+  address   String?  @db.Text
+  instagram String?
+  facebook  String?
+  youtube   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
