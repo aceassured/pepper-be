@@ -3,6 +3,7 @@ import {
     BadRequestException,
     UnauthorizedException,
     NotFoundException,
+    InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -18,15 +19,35 @@ import { put } from '@vercel/blob';
 import { randomUUID } from 'crypto';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
+import { Twilio } from 'twilio';
+import { SendPhoneOtpDto } from './dto/send-otp.dto';
+import { VerifyPhoneOtpDto } from './dto/verify-otp.dto';
 
 
 
 @Injectable()
 export class UserService {
+    private twilio: Twilio;
+    private verifyServiceSid: string;
+
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly jwt: JwtService,
-    ) { }
+    ) {
+        this.twilio = new Twilio(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN,
+        );
+
+        const sid = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+        if (!sid) {
+            throw new Error('TWILIO_VERIFY_SERVICE_SID is missing in environment variables');
+        }
+
+        this.verifyServiceSid = sid;
+    }
 
     // 🔹 Register user
     async register(dto: CreateUserDto) {
@@ -79,6 +100,62 @@ export class UserService {
             return this.buildLoginResponse(user);
         } catch (error) {
             catchBlock(error)
+        }
+    }
+
+
+    // Twilio OTP Services
+
+    async sendPhoneOtp(dto: SendPhoneOtpDto) {
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { phone: dto.phone },
+            });
+
+            if (!user) throw new NotFoundException('Phone number not registered');
+
+            await this.twilio.verify.v2
+                .services(process.env.TWILIO_VERIFY_SERVICE_SID || '')
+                .verifications.create({
+                    to: dto.phone,
+                    channel: 'sms',
+                });
+
+            return { message: 'OTP sent successfully' };
+        } catch (error) {
+            catchBlock(error)
+        }
+    }
+
+    async verifyPhoneOtp(dto: VerifyPhoneOtpDto) {
+        try {
+            const result = await this.twilio.verify.v2
+                .services(this.verifyServiceSid)
+                .verificationChecks.create({
+                    to: dto.phone,
+                    code: dto.otp,
+                });
+
+            if (result.status !== 'approved') {
+                throw new UnauthorizedException('Invalid or expired OTP');
+            }
+
+            const user = await this.prisma.user.findUnique({
+                where: { phone: dto.phone },
+            });
+
+            if (!user) throw new UnauthorizedException('User not found');
+
+            return this.buildLoginResponse(user);
+
+        } catch (error: any) {
+            console.log(error);
+
+            if (error.code === 20404) {
+                throw new UnauthorizedException('Invalid or expired OTP');
+            }
+
+            throw new InternalServerErrorException('OTP verification failed');
         }
     }
 
@@ -190,7 +267,7 @@ export class UserService {
         }
     }
 
-    async validateOAuthLogin({ provider, providerId, email, name}) {
+    async validateOAuthLogin({ provider, providerId, email, name }) {
         // 1) try find OAuth account
         const account = await this.prisma.oAuthAccount.findUnique({
             where: { provider_providerId: { provider, providerId } },

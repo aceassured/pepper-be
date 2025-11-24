@@ -8,6 +8,8 @@ import { CreateBlogDto } from "./dto/create-blog.dto";
 import { CreateTestimonialDto } from "./dto/create-testimonial.dto";
 import { AuthGuard } from "@nestjs/passport";
 import type { Response } from "express";
+import { VerifyPhoneOtpDto } from "./dto/verify-otp.dto";
+import { SendPhoneOtpDto } from "./dto/send-otp.dto";
 
 
 
@@ -26,6 +28,18 @@ export class UserController {
   @Post('login')
   async login(@Body() dto: CreateUserDto) {
     return this.userService.login(dto);
+  }
+
+  // Twilio OTP Services
+
+  @Post('phone/send-otp')
+  sendPhoneOtp(@Body() dto: SendPhoneOtpDto) {
+    return this.userService.sendPhoneOtp(dto);
+  }
+
+  @Post('phone/verify-otp')
+  verifyPhoneOtp(@Body() dto: VerifyPhoneOtpDto) {
+    return this.userService.verifyPhoneOtp(dto);
   }
 
   // 🔹 Send OTP

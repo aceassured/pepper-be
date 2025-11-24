@@ -2092,34 +2092,54 @@ export class AdminService {
                 throw new BadRequestException('Invalid option');
             }
 
-            // 1. Upload file if provided
+            const existing = await this.prisma.metaData.findFirst();
+
+            // Read existing field (ex: existing[option] might be the stored object)
+            const existingValue = existing ? existing[option] : {};
+
+            // Make a safe copy of the new incoming value
+            let newValue = { ...existingValue, ...value };
+
+            // CASE 1: Image file uploaded → upload & overwrite imageUrl
             if (image) {
                 const uploaded = await put(`meta/${Date.now()}-${image.originalname}`, image.buffer, {
                     access: 'public',
                 });
 
-                value.imageUrl = uploaded.url; // attach image URL
+                newValue.imageUrl = uploaded.url;
+            }
+            // CASE 2: No file uploaded → check if frontend provided imageUrl
+            else if (value?.imageUrl) {
+                // Keep the provided URL (frontend wants to keep/change the URL)
+                newValue.imageUrl = value.imageUrl;
+            }
+            // CASE 3: No file + no URL provided → DO NOT TOUCH imageUrl
+            else {
+                // Ensure the imageUrl from existing stays untouched
+                newValue.imageUrl = existingValue.imageUrl;
             }
 
-            const existing = await this.prisma.metaData.findFirst();
-
+            // If no existing record → create
             if (!existing) {
                 const createData: Record<string, any> = {};
-                createData[option] = value;
+                createData[option] = newValue;
                 return await this.prisma.metaData.create({ data: createData });
             }
 
+            // Update record
             const updateData: Record<string, any> = {};
-            updateData[option] = JSON.parse(JSON.stringify(value));
+            updateData[option] = newValue;
 
             return await this.prisma.metaData.update({
                 where: { id: existing.id },
                 data: updateData,
             });
+
         } catch (error) {
             catchBlock(error)
         }
     }
+
 
     // ==== End of meta data management module =====
 
