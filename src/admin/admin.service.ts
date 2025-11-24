@@ -2114,10 +2114,10 @@ export class AdminService {
                 newValue.imageUrl = value.imageUrl;
             }
             // CASE 3: No file + no URL provided → DO NOT TOUCH imageUrl
-            else {
-                // Ensure the imageUrl from existing stays untouched
-                newValue.imageUrl = existingValue.imageUrl;
-            }
+            // else {
+            //     // Ensure the imageUrl from existing stays untouched
+            //     newValue.imageUrl = existingValue.imageUrl;
+            // }
 
             // If no existing record → create
             if (!existing) {
