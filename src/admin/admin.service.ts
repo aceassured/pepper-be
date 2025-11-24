@@ -2094,13 +2094,12 @@ export class AdminService {
 
             const existing = await this.prisma.metaData.findFirst();
 
-            // Read existing field (ex: existing[option] might be the stored object)
-            const existingValue = existing ? existing[option] : {};
+            // Start building the new value
+            let newValue = { ...value };
 
-            // Make a safe copy of the new incoming value
-            let newValue = { ...existingValue, ...value };
-
-            // CASE 1: Image file uploaded → upload & overwrite imageUrl
+            // -----------------------------
+            // CASE 1: Image file uploaded
+            // -----------------------------
             if (image) {
                 const uploaded = await put(`meta/${Date.now()}-${image.originalname}`, image.buffer, {
                     access: 'public',
@@ -2108,25 +2107,34 @@ export class AdminService {
 
                 newValue.imageUrl = uploaded.url;
             }
-            // CASE 2: No file uploaded → check if frontend provided imageUrl
-            else if (value?.imageUrl) {
-                // Keep the provided URL (frontend wants to keep/change the URL)
-                newValue.imageUrl = value.imageUrl;
-            }
-            // CASE 3: No file + no URL provided → DO NOT TOUCH imageUrl
-            // else {
-            //     // Ensure the imageUrl from existing stays untouched
-            //     newValue.imageUrl = existingValue.imageUrl;
-            // }
 
-            // If no existing record → create
+            // ---------------------------------------------
+            // CASE 2: No image file → check imageUrl from request
+            // ---------------------------------------------
+            else {
+                if (value.hasOwnProperty('imageUrl')) {
+                    // If frontend explicitly sends null, keep null
+                    if (value.imageUrl === null) {
+                        newValue.imageUrl = null;
+                    }
+                    // If frontend sends a URL string, save it
+                    else if (typeof value.imageUrl === 'string') {
+                        newValue.imageUrl = value.imageUrl;
+                    }
+                } else {
+                    // Frontend did NOT send imageUrl → set to null
+                    newValue.imageUrl = null;
+                }
+            }
+
+            // CREATE if first record
             if (!existing) {
                 const createData: Record<string, any> = {};
                 createData[option] = newValue;
                 return await this.prisma.metaData.create({ data: createData });
             }
 
-            // Update record
+            // UPDATE existing
             const updateData: Record<string, any> = {};
             updateData[option] = newValue;
 
@@ -2136,9 +2144,10 @@ export class AdminService {
             });
 
         } catch (error) {
-            catchBlock(error)
+            catchBlock(error);
         }
     }
+
 
 
     // ==== End of meta data management module =====
