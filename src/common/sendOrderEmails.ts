@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const sendAdminNewOrderEmail = async (order: any) => {
   const options = {
     from: "Kumbuckal Pepper Nursery <support@kumbuckalpepper.com>",
-    to: process.env.ADMIN_EMAIL || "devkumbukkalpepper@gmail.com",
+    to: process.env.ADMIN_EMAIL || "kumbuckalpepper@gmail.com",
     subject: `🛒 New Order Received - ${order.orderId}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">

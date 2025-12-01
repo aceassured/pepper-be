@@ -123,7 +123,7 @@ export const sendSummaryReport = async (summaryResponse: any) => {
 
     const mailOptions = {
       from: "Kumbuckal Pepper Nursery <no-reply@kumbuckalpepper.com>",
-      to: process.env.ADMIN_EMAIL || 'devkumbukkalpepper@gmail.com',
+      to: process.env.ADMIN_EMAIL || 'kumbuckalpepper@gmail.com',
       subject,
       html,
     };
