@@ -748,7 +748,9 @@ export class AdminService {
     // add order as the bluk upload through admin
     async bulkOrder(dto: CreateOrderDto) {
         try {
-            const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
+            // const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity) * 100);
+            const totalAmountInPaise = Math.floor(Number(dto.pricePerUnitInPaise) * Number(dto.quantity));
+
 
             const currentYear = new Date().getFullYear();
 
